@@ -2,8 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
+import json
 
 class ResourceTrade(models.Model):
     """Модель для асинхронной торговли ресурсами"""
@@ -296,7 +296,7 @@ class Achievement(models.Model):
     required_upgrades = models.IntegerField(default=0)
 
     required_wins = models.IntegerField(default=0)
-    required_collection = models.JSONField(default=dict, blank=True, null=True)  # Для специальных требований
+    required_collection = models.TextField(default='{}', blank=True, null=True)  # JSON строка для специальных требований
 
     # Награда
     reward_coins = models.BigIntegerField(default=0)
@@ -384,7 +384,7 @@ class PlayerAchievement(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='achievements')
     achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
     unlocked_at = models.DateTimeField(auto_now_add=True)
-    progress_data = models.JSONField(default=dict)  # Для хранения прогресса на момент разблокировки
+    progress_data = models.TextField(default='{}')  # JSON строка для хранения прогресса
     is_new = models.BooleanField(default=True)  # Помечать новые достижения
 
     class Meta:
