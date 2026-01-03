@@ -11,7 +11,7 @@ ALLOWED_HOSTS = ['*']  # Для бесплатного хостинга
 ROOT_URLCONF = 'CATVID.urls'
 
 # MongoDB Atlas (бесплатный) или локальный MongoDB
-MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
+MONGO_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URL') or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
