@@ -1,1 +1,1 @@
-web: gunicorn CATVID.wsgi --log-file -
+web: cd CATVID && gunicorn CATVID.wsgi --log-file -

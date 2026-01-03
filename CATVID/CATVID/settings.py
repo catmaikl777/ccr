@@ -116,25 +116,19 @@ INSTALLED_APPS = [
     'main',  # Ваше приложение с игрой
 ]
 
-# Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOG_DIR / 'battles.log'),
-            'maxBytes': 1024 * 1024 * 100,  # 100 MB
-            'backupCount': 5,
-        },
-    },
-    'loggers': {
-        'battles': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-        },
-    },
-}
+# Убираю ошибку с логами для Render
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'battles': {
+#             'handlers': ['console'],
+#             'level': 'INFO',
+#         },
+#     },
+# }

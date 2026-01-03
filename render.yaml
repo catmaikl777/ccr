@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: clicker-game
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "cd CATVID && gunicorn CATVID.wsgi:application"
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
