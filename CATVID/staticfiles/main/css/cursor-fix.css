@@ -1,0 +1,55 @@
+/* Cursor fix for click button - highest priority */
+#click-button,
+#click-button *,
+.click-button,
+.click-button *,
+#click-button img,
+.click-button img,
+.images_cat_button,
+.images_planet_button {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.images_cat_button,
+.images_planet_button {
+    pointer-events: none !important;
+}
+
+/* Mobile touch optimization */
+@media (max-width: 768px) {
+    #click-button {
+        -webkit-tap-highlight-color: rgba(0, 188, 212, 0.3) !important;
+        touch-action: manipulation !important;
+    }
+    
+    #click-button:active {
+        transform: scale(0.95) !important;
+        transition: transform 0.1s !important;
+    }
+}
+
+/* Ensure consistent cursor across all interactive elements */
+button,
+.btn,
+.buy-button,
+.nav-link,
+a[role="button"] {
+    cursor: pointer !important;
+}
+
+/* Fix for notification buttons */
+.btn-notification-action,
+.btn-accept,
+.btn-decline,
+.btn-view {
+    cursor: pointer !important;
+}
+
+.btn-notification-action *,
+.btn-accept *,
+.btn-decline *,
+.btn-view * {
+    cursor: pointer !important;
+    pointer-events: none !important;
+}

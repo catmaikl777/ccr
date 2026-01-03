@@ -1,0 +1,729 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Скины - Кликер Игра{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="skins-header">
+        <h2><i class="fas fa-palette"></i> Коллекция скинов</h2>
+        <p class="skins-description">Собирайте и используйте различные скины для своего персонажа!</p>
+        
+        <div class="player-info">
+            <div class="stat-mini">
+                <i class="fas fa-coins"></i>
+                <span>{{ player.coins }} монет</span>
+            </div>
+            <div class="stat-mini">
+                <i class="fas fa-mouse"></i>
+                <span>{{ player.clicks }} кликов</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="current-skin-display">
+        <h3><i class="fas fa-star"></i> Текущий скин</h3>
+        <div class="current-skin-preview">
+            <img id="current-skin-image" src="{% static 'main/skins/' %}{{ current_skin }}" alt="Текущий скин" class="current-skin-img">
+            <p class="current-skin-name">{{ current_skin }}</p>
+        </div>
+    </div>
+
+    <div class="skins-grid">
+        {% for skin in skins %}
+        <div class="skin-card {% if skin.is_unlocked %}unlocked{% else %}locked{% endif %} {% if skin.image_name == current_skin %}active{% endif %}" 
+             data-skin="{{ skin.image_name }}" 
+             data-skin-id="{{ skin.id }}">
+            
+            <div class="skin-preview">
+                <img src="{% static 'main/skins/' %}{{ skin.image_name }}" 
+                     alt="{{ skin.name }}" 
+                     class="skin-image"
+                     onerror="this.src='{% static 'main/skins/cat.png' %}'">
+                
+                {% if skin.image_name == current_skin %}
+                <div class="active-badge">
+                    <i class="fas fa-check"></i>
+                    <span>Активен</span>
+                </div>
+                {% endif %}
+                
+                {% if not skin.is_unlocked %}
+                <div class="locked-overlay">
+                    <i class="fas fa-lock"></i>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="skin-info">
+                <h3 class="skin-name">{{ skin.name }}</h3>
+                <p class="skin-description">{{ skin.description }}</p>
+                
+                <div class="skin-requirements">
+                    {% if not skin.is_free %}
+                        <div class="requirement">
+                            <i class="fas fa-coins"></i>
+                            <span>{{ skin.price }} монет</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if skin.required_clicks > 0 %}
+                        <div class="requirement">
+                            <i class="fas fa-mouse"></i>
+                            <span>{{ skin.required_clicks }} кликов</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="skin-rarity rarity-{{ skin.rarity }}">
+                    <i class="fas fa-gem"></i>
+                    <span>{{ skin.get_rarity_display|default:skin.rarity }}</span>
+                </div>
+            </div>
+
+            <div class="skin-actions">
+                {% if skin.is_unlocked %}
+                    {% if skin.image_name == current_skin %}
+                        <button class="skin-button active" disabled>
+                            <i class="fas fa-check"></i>
+                            Используется
+                        </button>
+                    {% else %}
+                        <button class="skin-button use-skin" data-skin="{{ skin.image_name }}">
+                            <i class="fas fa-hand-pointer"></i>
+                            Использовать
+                        </button>
+                    {% endif %}
+                {% elif skin.can_unlock %}
+                    <button class="skin-button unlock-skin" 
+                            data-skin="{{ skin.image_name }}" 
+                            data-price="{{ skin.price }}">
+                        <i class="fas fa-unlock"></i>
+                        Разблокировать
+                    </button>
+                {% else %}
+                    <button class="skin-button locked" disabled>
+                        <i class="fas fa-lock"></i>
+                        Заблокирован
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-skins">
+            <i class="fas fa-palette"></i>
+            <p>Скины не найдены</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="back-to-game">
+        <a href="{% url 'index' %}" class="back-button">
+            <i class="fas fa-arrow-left"></i>
+            Вернуться к игре
+        </a>
+    </div>
+</div>
+
+<!-- Уведомления -->
+<div id="skin-notification" class="skin-notification">
+    <div class="notification-content">
+        <i class="fas fa-palette"></i>
+        <span class="notification-text"></span>
+    </div>
+</div>
+
+<input type="hidden" id="player-id" value="{{ player.id }}">
+{% csrf_token %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const playerId = document.getElementById('player-id').value;
+    let playerCoins = {{ player.coins }};
+
+    // Функция для получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Показать уведомление
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('skin-notification');
+        const text = notification.querySelector('.notification-text');
+        
+        text.textContent = message;
+        notification.className = `skin-notification ${type} show`;
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    // Обновить UI после изменений
+    function updateUI(newCoins) {
+        playerCoins = newCoins;
+        
+        // Обновляем отображение монет
+        const coinsDisplay = document.querySelector('.stat-mini span');
+        if (coinsDisplay) {
+            coinsDisplay.textContent = `${newCoins} монет`;
+        }
+        
+        // Обновляем состояние кнопок
+        document.querySelectorAll('.unlock-skin').forEach(button => {
+            const price = parseInt(button.dataset.price);
+            if (newCoins < price) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-lock"></i> Недостаточно монет';
+            } else {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-unlock"></i> Разблокировать';
+            }
+        });
+    }
+
+    // Использовать скин
+    document.querySelectorAll('.use-skin').forEach(button => {
+        button.addEventListener('click', function() {
+            const skinName = this.dataset.skin;
+            
+            fetch('/change_skin/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    skin_name: skinName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем текущий скин
+                    document.getElementById('current-skin-image').src = `/static/main/skins/${skinName}`;
+                    document.querySelector('.current-skin-name').textContent = skinName;
+                    
+                    // Обновляем активные состояния
+                    document.querySelectorAll('.skin-card').forEach(card => {
+                        card.classList.remove('active');
+                        const button = card.querySelector('.skin-button');
+                        if (button && !button.classList.contains('unlock-skin')) {
+                            button.innerHTML = '<i class="fas fa-hand-pointer"></i> Использовать';
+                            button.classList.remove('active');
+                            button.disabled = false;
+                        }
+                    });
+                    
+                    // Отмечаем новый активный скин
+                    const activeCard = document.querySelector(`[data-skin="${skinName}"]`);
+                    if (activeCard) {
+                        activeCard.classList.add('active');
+                        const activeButton = activeCard.querySelector('.skin-button');
+                        if (activeButton) {
+                            activeButton.innerHTML = '<i class="fas fa-check"></i> Используется';
+                            activeButton.classList.add('active');
+                            activeButton.disabled = true;
+                        }
+                    }
+                    
+                    showNotification(data.message || 'Скин изменен!', 'success');
+                } else {
+                    showNotification(data.error || 'Ошибка при смене скина', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                showNotification('Произошла ошибка при смене скина', 'error');
+            });
+        });
+    });
+
+    // Разблокировать скин
+    document.querySelectorAll('.unlock-skin').forEach(button => {
+        button.addEventListener('click', function() {
+            const skinName = this.dataset.skin;
+            const price = parseInt(this.dataset.price);
+            
+            if (playerCoins < price) {
+                showNotification('Недостаточно монет для разблокировки', 'error');
+                return;
+            }
+            
+            if (confirm(`Разблокировать скин за ${price} монет?`)) {
+                fetch('/unlock_skin/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        skin_name: skinName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Обновляем монеты
+                        updateUI(data.new_coins);
+                        
+                        // Обновляем карточку скина
+                        const skinCard = this.closest('.skin-card');
+                        skinCard.classList.remove('locked');
+                        skinCard.classList.add('unlocked');
+                        
+                        // Убираем overlay блокировки
+                        const lockedOverlay = skinCard.querySelector('.locked-overlay');
+                        if (lockedOverlay) {
+                            lockedOverlay.remove();
+                        }
+                        
+                        // Меняем кнопку
+                        this.outerHTML = `
+                            <button class="skin-button use-skin" data-skin="${skinName}">
+                                <i class="fas fa-hand-pointer"></i>
+                                Использовать
+                            </button>
+                        `;
+                        
+                        // Переназначаем обработчик для новой кнопки
+                        const newButton = skinCard.querySelector('.use-skin');
+                        newButton.addEventListener('click', function() {
+                            // Логика использования скина (копируем из выше)
+                            const skinName = this.dataset.skin;
+                            
+                            fetch('/change_skin/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                body: JSON.stringify({
+                                    skin_name: skinName
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    location.reload(); // Простое решение для обновления состояния
+                                } else {
+                                    showNotification(data.error || 'Ошибка при смене скина', 'error');
+                                }
+                            });
+                        });
+                        
+                        showNotification(data.message || 'Скин разблокирован!', 'success');
+                    } else {
+                        showNotification(data.error || 'Ошибка при разблокировке скина', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    showNotification('Произошла ошибка при разблокировке скина', 'error');
+                });
+            }
+        });
+    });
+
+    // Эффекты при наведении на карточки скинов
+    document.querySelectorAll('.skin-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('locked')) {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            }
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+</script>
+
+<style>
+/* Стили для страницы скинов */
+.skins-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #673ab7;
+}
+
+.skins-header h2 {
+    color: #ff4081;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.skins-description {
+    color: #80deea;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+}
+
+.player-info {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.stat-mini {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #b3e5fc;
+    font-weight: bold;
+}
+
+.stat-mini i {
+    color: #ffd700;
+}
+
+.current-skin-display {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 1.5rem;
+    background: rgba(30, 30, 60, 0.8);
+    border: 2px solid #00bcd4;
+    border-radius: 15px;
+}
+
+.current-skin-display h3 {
+    color: #00bcd4;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.current-skin-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.current-skin-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.current-skin-name {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.skins-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.skin-card {
+    background: rgba(30, 30, 60, 0.9);
+    border: 3px solid #673ab7;
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.skin-card.unlocked {
+    border-color: #4caf50;
+}
+
+.skin-card.active {
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+}
+
+.skin-card.locked {
+    border-color: #666;
+    opacity: 0.7;
+}
+
+.skin-preview {
+    position: relative;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.skin-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #00bcd4;
+    transition: all 0.3s;
+}
+
+.skin-card:hover .skin-image {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.5);
+}
+
+.active-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(135deg, #ffd700, #ff9800);
+    color: #1a237e;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.locked-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.locked-overlay i {
+    font-size: 2rem;
+    color: #666;
+}
+
+.skin-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.skin-name {
+    color: #80deea;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.skin-description {
+    color: #b3e5fc;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.skin-requirements {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #e1f5fe;
+    font-size: 0.8rem;
+}
+
+.requirement i {
+    color: #ffd700;
+}
+
+.skin-rarity {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.rarity-common { color: #808080; }
+.rarity-uncommon { color: #1EFF00; }
+.rarity-rare { color: #0070DD; }
+.rarity-epic { color: #A335EE; }
+.rarity-legendary { color: #FF8000; }
+
+.skin-actions {
+    text-align: center;
+}
+
+.skin-button {
+    background: linear-gradient(135deg, #00bcd4, #0097a7);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.skin-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff4081, #d81b60);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 64, 129, 0.4);
+}
+
+.skin-button.active {
+    background: linear-gradient(135deg, #ffd700, #ff9800);
+    color: #1a237e;
+}
+
+.skin-button.locked {
+    background: #37474f;
+    color: #78909c;
+    cursor: not-allowed;
+}
+
+.skin-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.no-skins {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #80deea;
+    font-size: 1.2rem;
+    padding: 3rem;
+}
+
+.no-skins i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #673ab7;
+}
+
+.back-to-game {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #673ab7, #512da8);
+    color: white;
+    text-decoration: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.back-button:hover {
+    background: linear-gradient(135deg, #512da8, #4527a0);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(103, 58, 183, 0.4);
+}
+
+/* Уведомления */
+.skin-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.skin-notification.show {
+    transform: translateX(0);
+}
+
+.skin-notification.error {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .skins-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .player-info {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .skin-requirements {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .current-skin-img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .skin-image {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .skin-notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+    
+    .skin-notification.show {
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}

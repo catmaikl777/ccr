@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .box {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            border: 3px solid #FFD700;
+            border-radius: 10px;
+            position: relative;
+            margin: 20px;
+            display: inline-block;
+        }
+        .box::before {
+            content: '📦';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+        }
+        .premium {
+            background: linear-gradient(135deg, #4B0082, #8A2BE2);
+            border-color: #FF1493;
+        }
+        .premium::before {
+            content: '🎁';
+        }
+    </style>
+</head>
+<body>
+    <div class="box"></div>
+    <div class="box premium"></div>
+</body>
+</html>

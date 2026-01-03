@@ -1,0 +1,24 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Основа ящика -->
+  <rect x="20" y="40" width="60" height="40" fill="#8B4513" stroke="#654321" stroke-width="2" rx="3"/>
+  
+  <!-- Крышка ящика -->
+  <rect x="15" y="30" width="70" height="20" fill="#A0522D" stroke="#654321" stroke-width="2" rx="3"/>
+  
+  <!-- Простой замок -->
+  <rect x="45" y="35" width="10" height="8" fill="#C0C0C0" stroke="#808080" stroke-width="1" rx="1"/>
+  <circle cx="50" cy="39" r="2" fill="#808080"/>
+  
+  <!-- Декоративные полосы -->
+  <rect x="25" y="55" width="50" height="1" fill="#654321" opacity="0.7"/>
+  <rect x="25" y="65" width="50" height="1" fill="#654321" opacity="0.7"/>
+  
+  <!-- Простые уголки -->
+  <rect x="17" y="32" width="4" height="4" fill="#654321"/>
+  <rect x="79" y="32" width="4" height="4" fill="#654321"/>
+  <rect x="17" y="74" width="4" height="4" fill="#654321"/>
+  <rect x="79" y="74" width="4" height="4" fill="#654321"/>
+  
+  <!-- Блик -->
+  <rect x="22" y="43" width="2" height="30" fill="#D2691E" opacity="0.5"/>
+</svg>

@@ -1,0 +1,26 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Ошибка - Кликер Игра{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <h2><i class="fas fa-exclamation-triangle"></i> Ошибка</h2>
+        
+        <div class="error-message">
+            <p>Произошла ошибка при загрузке страницы:</p>
+            <pre>{{ error }}</pre>
+        </div>
+        
+        <div class="error-actions">
+            <a href="{% url 'index' %}" class="error-button">
+                <i class="fas fa-home"></i> На главную
+            </a>
+            <button onclick="location.reload()" class="error-button">
+                <i class="fas fa-redo"></i> Обновить страницу
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

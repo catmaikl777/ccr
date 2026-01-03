@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Соревнования - КОСАТКА КЛИК REMASTER</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'main/css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="competition-page">
+    {% include 'main/base.html' %}
+    
+    <div class="container">
+        <div class="competition-container">
+            <div class="competition-header">
+                <h1><i class="fas fa-trophy"></i> Соревнования</h1>
+                <p class="competition-subtitle">Соревнуйтесь с другими игроками в режиме реального времени</p>
+            </div>
+
+            <div class="competition-controls">
+                <div class="timer-display">
+                    <i class="fas fa-clock"></i>
+                    <span id="timer">60</span> сек
+                </div>
+                <div class="status-display">
+                    <span id="status">Ожидание игроков...</span>
+                </div>
+            </div>
+
+            <div class="lobbies-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Доступные лобби</h2>
+                    <button id="create-lobby" class="btn-primary">
+                        <i class="fas fa-plus"></i> Создать лобби
+                    </button>
+                    
+                    <div class="competition-modal" id="lobbyModal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3><i class="fas fa-users"></i> Создание лобби</h3>
+                                <button class="modal-close" id="closeModal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="lobbyName">Название лобби:</label>
+                                    <input type="text" id="lobbyName" class="form-input" maxlength="30" placeholder="Например: Котики дракончики">
+                                    <div class="char-counter">30</div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="competitionTime">Время соревнования:</label>
+                                    <select id="competitionTime" class="form-input">
+                                        <option value="30">30 секунд</option>
+                                        <option value="60" selected>60 секунд</option>
+                                        <option value="90">90 секунд</option>
+                                        <option value="120">2 минуты</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="startCompetition" class="btn-primary">
+                                    <i class="fas fa-play"></i> Начать соревнование
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lobbies-list" id="lobbies-list">
+                    <!-- Лобби будут добавляться здесь -->
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <p>Нет доступных лобби. Создайте первое!</p>
+                    </div>
+                </div>
+                
+                <div class="competition-modal" id="joinModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-user-friends"></i> Присоединение к лобби</h3>
+                            <button class="modal-close" id="closeJoinModal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="lobby-info">
+                                <div>
+                                    <div class="lobby-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span id="joinLobbyTime">60 секунд</span>
+                                    </div>
+                                    <div class="lobby-players">
+                                        <i class="fas fa-users"></i>
+                                        <span id="joinLobbyPlayers">0/2 игроков</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="lobby-creator">
+                                        <i class="fas fa-crown"></i>
+                                        <span id="joinLobbyCreator">Создатель</span>
+                                    </div>
+                                    <div class="lobby-name">
+                                        <i class="fas fa-tag"></i>
+                                        <span id="joinLobbyName">Имя лобби</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="confirmJoin" class="btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Присоединиться
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="competition-modal" id="competitionModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-bolt"></i> Соревнование началось!</h3>
+                            <button class="modal-close" id="closeCompetitionModal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="competition-countdown">
+                                <div class="countdown-number" id="countdown">3</div>
+                                <div class="countdown-text">секунд до начала</div>
+                            </div>
+                            <div class="competition-info">
+                                <div class="info-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span id="competitionTimeDisplay">60</span> секунд
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-users"></i>
+                                    <span id="competitionPlayers">2</span> игрока
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="competition-modal" id="resultsModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-award"></i> Результаты соревнования</h3>
+                            <button class="modal-close" id="closeResultsModal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="results-list" id="resultsList">
+                                <!-- Результаты будут добавляться здесь -->
+                            </div>
+                            <div class="your-result">
+                                Ваш результат: <strong><span id="yourClicks">0</span> кликов</strong>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="closeResults" class="btn-primary">
+                                <i class="fas fa-trophy"></i> Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

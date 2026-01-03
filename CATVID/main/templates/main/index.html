@@ -1,0 +1,522 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Главная - Кликер Игра{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="player-stats">
+        <div class="stat-card">
+            <h3><i class="fas fa-coins"></i> Монеты</h3>
+            <p id="coins">{{ player.coins }}</p>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-mouse"></i> Клики</h3>
+            <p id="clicks">{{ player.clicks }}</p>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-bolt"></i> Сила клика</h3>
+            <p id="click-power">{{ player.click_power }}</p>
+        </div>
+        <div class="stat-card">
+            <h3><i class="fas fa-robot"></i> Автокликер</h3>
+            <p id="auto-clicker-power">{{ player.auto_clicker_power }}/сек</p>
+        </div>
+    </div>
+
+    <div class="clicker-area">
+        <button id="click-button" class="click-button" aria-label="Кнопка клика">
+            <img id="skin-image" class="images_cat_button" src="{% static 'main/skins/' %}{{ player.current_skin }}" height="250" width="250" alt="Котик для кликов" onerror="this.src=`{% static 'main/skins/cat.png' %}`">
+        </button>
+        <p class="hint">Нажимай на кнопку, чтобы зарабатывать монеты!</p>
+    </div>
+
+    <div class="upgrades-section">
+        <h2><i class="fas fa-arrow-up"></i> Улучшения</h2>
+
+        <div class="upgrades-grid">
+            {% for upgrade in upgrades %}
+            <div class="upgrade-card" data-upgrade-id="{{ upgrade.id }}" data-upgrade-type="{{ upgrade.upgrade_type }}">
+                <div class="upgrade-header">
+                    <h3>{{ upgrade.name }}</h3>
+                    <span class="upgrade-type-badge {{ upgrade.upgrade_type }}">
+                        {{ upgrade.get_upgrade_type_display }}
+                    </span>
+                </div>
+
+                <p class="upgrade-desc">{{ upgrade.description }}</p>
+
+                <div class="upgrade-info">
+                    <!-- Отображаем стоимость -->
+                    <p><i class="fas fa-coins"></i> Стоимость:
+                        <span class="cost" id="cost-{{ upgrade.id }}">
+                            {{ upgrade.player_cost }}
+                        </span>
+                    </p>
+
+                    <!-- Отображаем эффект в зависимости от типа -->
+                    {% if upgrade.upgrade_type == 'click_power' %}
+                    <p><i class="fas fa-bolt"></i> +{{ upgrade.click_power_increase }} к силе клика</p>
+                    {% elif upgrade.upgrade_type == 'auto_clicker' %}
+                    <p><i class="fas fa-robot"></i> +{{ upgrade.auto_clicker_speed }} кликов/сек</p>
+                    {% elif upgrade.upgrade_type == 'critical_chance' %}
+                    <p><i class="fas fa-star"></i> +{{ upgrade.critical_chance }}% шанс крита</p>
+                    {% elif upgrade.upgrade_type == 'coin_multiplier' %}
+                    <p><i class="fas fa-chart-line"></i> ×{{ upgrade.coin_multiplier }} множитель монет</p>
+                    {% endif %}
+
+                    <p><i class="fas fa-chart-line"></i> Следующий уровень:
+                        <span id="next-cost-{{ upgrade.id }}">
+                            {{ upgrade.player_next_cost }}
+                        </span>
+                    </p>
+
+                    <!-- Прогресс уровня -->
+                    <div class="level-progress">
+                        <div class="progress-bar"
+                             style="width: {% widthratio upgrade.player_level upgrade.max_level 100 %}">
+                            <span class="progress-text">{{ upgrade.player_level }}/{{ upgrade.max_level }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="buy-button"
+                        data-upgrade-id="{{ upgrade.id }}"
+                        data-cost="{{ upgrade.player_cost }}"
+                        data-maxed="{% if upgrade.player_is_max_level %}1{% else %}0{% endif %}"
+                        {% if upgrade.player_is_max_level or player.coins < upgrade.player_cost %}disabled{% endif %}>
+                    {% if upgrade.player_is_max_level %}
+                    <i class="fas fa-crown"></i> Макс. уровень
+                    {% elif player.coins < upgrade.player_cost %}
+                    <i class="fas fa-lock"></i> Недостаточно монет
+                    {% else %}
+                    <i class="fas fa-shopping-cart"></i> Купить улучшение
+                    {% endif %}
+                </button>
+            </div>
+            {% empty %}
+            <p>Улучшения пока не добавлены. Зайдите в админ-панель чтобы добавить их!</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Секция ящиков -->
+    <div class="boxes-section">
+        <h2><i class="fas fa-box"></i> Ящики со скинами</h2>
+        <p class="boxes-description">Покупайте ящики, чтобы получить скины, монеты и клики!</p>
+        
+        <div class="boxes-grid">
+            {% for box in boxes %}
+            <div class="box-card" data-box-id="{{ box.id }}">
+                <div class="box-header">
+                    <h3>{{ box.name }}</h3>
+                    <img src="{% static 'main/images/' %}{{ box.image }}" alt="{{ box.name }}" class="box-image" onerror="this.src='{% static 'main/images/box.svg' %}'">
+                </div>
+                
+                <p class="box-desc">{{ box.description }}</p>
+                
+                <div class="box-info">
+                    <p><i class="fas fa-coins"></i> Цена: <span class="box-price">{{ box.price }}</span> монет</p>
+                    
+                    <div class="box-drops">
+                        <h4>Возможные награды:</h4>
+                        <ul>
+                            {% for drop in box.drops.all %}
+                            <li class="{% if drop.is_rare %}rare-drop{% endif %}">
+                                {% if drop.item_type == 'skin' %}
+                                    <i class="fas fa-palette"></i> Скин: {{ drop.item_value }}
+                                {% elif drop.item_type == 'coins' %}
+                                    <i class="fas fa-coins"></i> {{ drop.item_value }} монет
+                                {% elif drop.item_type == 'clicks' %}
+                                    <i class="fas fa-mouse"></i> {{ drop.item_value }} кликов
+                                {% endif %}
+                                <span class="drop-chance">({{ drop.drop_chance }}%)</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <button class="buy-box-button" 
+                        data-box-id="{{ box.id }}"
+                        data-price="{{ box.price }}"
+                        {% if player.coins < box.price %}disabled{% endif %}>
+                    {% if player.coins < box.price %}
+                        <i class="fas fa-lock"></i> Недостаточно монет
+                    {% else %}
+                        <i class="fas fa-box-open"></i> Купить за {{ box.price }} монет
+                    {% endif %}
+                </button>
+            </div>
+            {% empty %}
+            <p>Ящики пока не добавлены.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="player-id" value="{{ player.id }}">
+{% csrf_token %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'main/js/audio-manager.js' %}" defer></script>
+<script src="{% static 'main/js/clicker.js' %}" defer></script>
+<script src="{% static 'main/js/init-effects.js' %}" defer></script>
+<script src="{% static 'main/js/auto_clicker.js' %}" defer></script>
+<script src="{% static 'main/js/skin_manager.js' %}" defer></script>
+
+<script>
+    // Function to get cookie value
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Основная логика игры
+    let gameState = {
+        coins: {{ player.coins }},
+        clicks: {{ player.clicks }},
+        clickPower: {{ player.click_power }},
+        autoClickerPower: {{ player.auto_clicker_power }},
+        playerId: {{ player.id }},
+        currentSkin: '{{ player.current_skin }}'
+    };
+
+    // Помечаем, что основная логика инициализирована
+    window.gameClickerInitialized = true;
+
+    // Инициализация кликера
+    function initializeClicker() {
+        const clickButton = document.getElementById('click-button');
+        const skinImage = document.getElementById('skin-image');
+        
+        if (clickButton) {
+            clickButton.addEventListener('click', handleClick);
+            clickButton.addEventListener('touchstart', handleClick, { passive: false });
+        }
+        
+        // Обновляем скин при загрузке
+        updateSkinImage();
+        
+        // Запускаем автокликер
+        if (gameState.autoClickerPower > 0) {
+            startAutoClicker();
+        }
+    }
+
+    // Обработка клика
+    function handleClick(event) {
+        event.preventDefault();
+        
+        // Анимация кнопки
+        const button = event.currentTarget;
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 100);
+        
+        // Отправляем клик на сервер
+        fetch('/click/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                player_id: gameState.playerId,
+                clicks: 1
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                gameState.coins = data.coins;
+                gameState.clicks = data.clicks;
+                updateUI();
+                
+                // Эффекты клика
+                createClickEffect(event.clientX || window.innerWidth/2, event.clientY || window.innerHeight/2);
+            }
+        })
+        .catch(error => console.error('Ошибка клика:', error));
+    }
+
+    // Обновление UI
+    function updateUI() {
+        const coinsElement = document.getElementById('coins');
+        const clicksElement = document.getElementById('clicks');
+        
+        if (coinsElement) coinsElement.textContent = gameState.coins.toLocaleString();
+        if (clicksElement) clicksElement.textContent = gameState.clicks.toLocaleString();
+    }
+
+    // Эффект клика
+    function createClickEffect(x, y) {
+        const effect = document.createElement('div');
+        effect.textContent = '+' + gameState.clickPower;
+        effect.style.cssText = `
+            position: fixed;
+            left: ${x}px;
+            top: ${y}px;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            z-index: 9999;
+            animation: floatUp 1s ease-out forwards;
+        `;
+        
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+    }
+
+    // Обновление изображения скина
+    function updateSkinImage() {
+        const skinImage = document.getElementById('skin-image');
+        if (skinImage && gameState.currentSkin) {
+            skinImage.src = `/static/main/skins/${gameState.currentSkin}`;
+        }
+    }
+
+    // Автокликер
+    function startAutoClicker() {
+        if (gameState.autoClickerPower > 0) {
+            setInterval(() => {
+                fetch('/auto_click/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        player_id: gameState.playerId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.coins_earned > 0) {
+                        gameState.coins = data.coins;
+                        gameState.clicks = data.clicks;
+                        updateUI();
+                    }
+                })
+                .catch(error => console.error('Ошибка автокликера:', error));
+            }, 1000);
+        }
+    }
+
+    // Покупка улучшений
+    function buyUpgrade(upgradeId, cost) {
+        if (gameState.coins >= cost) {
+            fetch('/buy_upgrade/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    player_id: gameState.playerId,
+                    upgrade_id: upgradeId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    gameState.coins = data.coins;
+                    gameState.clickPower = data.click_power;
+                    gameState.autoClickerPower = data.auto_clicker_power;
+                    updateUI();
+                    location.reload(); // Перезагружаем для обновления цен
+                } else {
+                    alert(data.error || 'Ошибка покупки');
+                }
+            })
+            .catch(error => console.error('Ошибка покупки:', error));
+        } else {
+            alert('Недостаточно монет!');
+        }
+    }
+
+    // Покупка ящика
+    function buyBox(boxId, price) {
+        console.log(`Попытка купить ящик ${boxId} за ${price} монет. У игрока: ${gameState.coins} монет`);
+        
+        if (gameState.coins >= price) {
+            const button = document.querySelector(`[data-box-id="${boxId}"]`);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Открываем...';
+            }
+            
+            console.log('Отправляем запрос на покупку ящика...');
+            
+            fetch('/buy_box/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    box_id: boxId
+                })
+            })
+            .then(response => {
+                console.log('Получен ответ от сервера:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные ответа:', data);
+                
+                if (data.success) {
+                    gameState.coins = data.coins;
+                    updateUI();
+                    
+                    // Показываем результат
+                    const result = data.result;
+                    let message = result.message || 'Получен предмет!';
+                    if (result.is_rare) {
+                        message = '🌟 ' + message + ' 🌟';
+                    }
+                    alert(message);
+                    
+                    // Если получен скин, обновляем изображение
+                    if (result.item_type === 'skin') {
+                        gameState.currentSkin = result.item_value;
+                        updateSkinImage();
+                    }
+                    
+                    // Обновляем кнопки ящиков
+                    updateBoxButtons();
+                } else {
+                    console.error('Ошибка покупки:', data.error);
+                    alert(data.error || 'Ошибка покупки ящика');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка сети при покупке ящика:', error);
+                alert('Ошибка сети');
+            })
+            .finally(() => {
+                // Восстанавливаем кнопку независимо от результата
+                if (button) {
+                    updateBoxButtons();
+                }
+            });
+        } else {
+            console.log('Недостаточно монет для покупки');
+            alert('Недостаточно монет!');
+        }
+    }
+    
+    // Функция обновления кнопок ящиков
+    function updateBoxButtons() {
+        document.querySelectorAll('.buy-box-button').forEach(button => {
+            const price = parseInt(button.dataset.price);
+            if (gameState.coins >= price) {
+                button.disabled = false;
+                button.innerHTML = `<i class="fas fa-box-open"></i> Купить за ${price} монет`;
+            } else {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-lock"></i> Недостаточно монет';
+            }
+        });
+    }
+
+    // Добавляем обработчики для кнопок
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeClicker();
+        
+        // Обработчики для кнопок улучшений
+        document.querySelectorAll('.buy-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const upgradeId = this.dataset.upgradeId;
+                const cost = parseInt(this.dataset.cost);
+                const isMaxed = this.dataset.maxed === '1';
+                
+                if (!isMaxed && !this.disabled) {
+                    buyUpgrade(upgradeId, cost);
+                }
+            });
+        });
+        
+        // Обработчики для кнопок ящиков
+        document.querySelectorAll('.buy-box-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const boxId = this.dataset.boxId;
+                const price = parseInt(this.dataset.price);
+                
+                console.log(`Клик по кнопке ящика: ID=${boxId}, цена=${price}`);
+                
+                if (!this.disabled) {
+                    buyBox(boxId, price);
+                } else {
+                    console.log('Кнопка заблокирована');
+                }
+            });
+        });
+    });
+
+    // CSS для анимаций
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+        }
+        
+        .click-button {
+            transition: transform 0.1s ease;
+            cursor: pointer;
+        }
+        
+        .click-button:active {
+            transform: scale(0.95);
+        }
+        
+        .buy-button:disabled,
+        .buy-box-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Дополнительная оптимизация для мобильных
+    (function() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            // Убираем все hover эффекты на мобильных
+            document.body.classList.add('no-hover');
+
+            // Предотвращаем масштабирование при двойном тапе
+            let lastTap = 0;
+            document.addEventListener('touchend', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 500 && tapLength > 0) {
+                    e.preventDefault();
+                }
+                lastTap = currentTime;
+            });
+        }
+    })();
+</script>
+{% endblock %}

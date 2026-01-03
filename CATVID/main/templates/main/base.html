@@ -1,0 +1,2958 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}КОСАТКА КЛИК REMASTER{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'main/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'main/css/cursor-fix.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSRF токен для JavaScript -->
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <style>
+        /* Стили для всплывающих сообщений */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: slideInRight 0.3s ease-out;
+            max-width: 400px;
+            border: 2px solid;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #f44336, #C62828);
+            color: white;
+            border-color: #f44336;
+        }
+
+        .toast-warning {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            border-color: #ff9800;
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            border-color: #2196f3;
+        }
+
+        .toast i {
+            font-size: 1.2rem;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+    </style>
+
+    <style>
+        /* Стили для уведомлений о приглашениях */
+        .invites-bell {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border: 3px solid #ffd700;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s;
+        }
+
+        .invites-bell:hover {
+            background: linear-gradient(135deg, #f57c00, #e65100);
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        }
+
+        .invites-bell.has-invites {
+            animation: bell-ring 1s ease-in-out;
+            background: linear-gradient(135deg, #ff4081, #C2185B);
+        }
+
+        @keyframes bell-ring {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+        }
+
+        .invites-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f44336;
+            color: white;
+            font-size: 0.8rem;
+            font-family: 'Press Start 2P', cursive;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffd700;
+        }
+
+        .invites-notification {
+            position: fixed;
+            top: 100px;
+            right: 90px;
+            width: 350px;
+            max-height: 500px;
+            background: linear-gradient(135deg, rgba(20, 20, 40, 0.95), rgba(10, 10, 30, 0.95));
+            border: 3px solid #ff9800;
+            border-radius: 15px;
+            z-index: 999;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .invites-container {
+            padding: 20px;
+        }
+
+        .invites-container h4 {
+            color: #ff9800;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 152, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .invites-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .invites-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .invites-list::-webkit-scrollbar-track {
+            background: rgba(255, 152, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        .invites-list::-webkit-scrollbar-thumb {
+            background: #ff9800;
+            border-radius: 3px;
+        }
+
+        .invite-item {
+            background: rgba(30, 30, 60, 0.8);
+            border: 2px solid #673ab7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .invite-item:hover {
+            border-color: #00bcd4;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 188, 212, 0.3);
+        }
+
+        .invite-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .invite-header strong {
+            color: #80deea;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+        }
+
+        .invite-time {
+            color: #b3e5fc;
+            font-size: 0.8rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .invite-body p {
+            margin: 5px 0;
+            color: #b3e5fc;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .invite-body i {
+            color: #ffd700;
+            width: 16px;
+        }
+
+        .invite-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-accept-invite,
+        .btn-decline-invite,
+        .btn-view-battle {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-accept-invite {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+        }
+
+        .btn-decline-invite {
+            background: linear-gradient(135deg, #f44336, #C62828);
+            color: white;
+        }
+
+        .btn-view-battle {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+        }
+
+        .btn-accept-invite:hover {
+            background: linear-gradient(135deg, #388E3C, #1B5E20);
+            transform: translateY(-2px);
+        }
+
+        .btn-decline-invite:hover {
+            background: linear-gradient(135deg, #C62828, #B71C1C);
+            transform: translateY(-2px);
+        }
+
+        .btn-view-battle:hover {
+            background: linear-gradient(135deg, #1976d2, #1565C0);
+            transform: translateY(-2px);
+        }
+
+        .btn-close-invites {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #757575, #616161);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-close-invites:hover {
+            background: linear-gradient(135deg, #616161, #424242);
+            transform: translateY(-2px);
+        }
+
+        /* Глобальные уведомления */
+        .global-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 9999;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 20px rgba(255, 152, 0, 0.4);
+            animation: slideDown 0.3s ease-out;
+            border: 2px solid #ffd700;
+            max-width: 90%;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .global-notification i {
+            font-size: 1.2rem;
+        }
+
+        .btn-close-notification {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .btn-close-notification:hover {
+            opacity: 1;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .invites-bell {
+                top: 80px;
+                right: 15px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .invites-count {
+                width: 20px;
+                height: 20px;
+                font-size: 0.7rem;
+            }
+
+            .invites-notification {
+                top: 80px;
+                right: 70px;
+                width: calc(100% - 100px);
+                max-width: 300px;
+            }
+
+            .global-notification {
+                padding: 12px 20px;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .invites-bell {
+                top: 70px;
+                right: 10px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .invites-notification {
+                top: 70px;
+                right: 60px;
+                width: calc(100% - 80px);
+            }
+
+            .invite-actions {
+                flex-direction: column;
+            }
+
+            .global-notification {
+                padding: 10px 15px;
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+
+    <style>
+        /* Критические стили для быстрого отклика */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+        
+        html, body {
+            touch-action: manipulation;
+            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
+        }
+        
+        .click-button,
+        .buy-button,
+        .nav-link,
+        button,
+        a {
+            touch-action: manipulation;
+        }
+        
+        /* Убираем задержку на мобильных */
+        a, button, input, textarea {
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+        }
+    </style>
+    <style>
+        /* Стили для системы уведомлений */
+        .notifications-wrapper {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+
+        .notifications-icon-container {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s;
+            border: 3px solid #ffd700;
+        }
+
+        .notifications-icon-container:hover {
+            transform: scale(1.1);
+            background: linear-gradient(135deg, #f57c00, #e65100);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+        }
+
+        .notifications-icon-container i {
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #f44336;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffd700;
+            animation: badge-pulse 2s infinite;
+        }
+
+        @keyframes badge-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .notification-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 152, 0, 0.3);
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Меню уведомлений */
+        .notifications-menu {
+            position: absolute;
+            top: 70px;
+            right: 0;
+            width: 400px;
+            max-height: 600px;
+            background: linear-gradient(135deg,
+                rgba(20, 20, 40, 0.98),
+                rgba(10, 10, 30, 0.98));
+            border: 3px solid #ff9800;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: none;
+            overflow: hidden;
+            z-index: 1002;
+        }
+
+        .notifications-menu.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notifications-header {
+            padding: 20px;
+            background: linear-gradient(135deg,
+                rgba(255, 152, 0, 0.2),
+                rgba(255, 107, 0, 0.2));
+            border-bottom: 2px solid rgba(255, 152, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notifications-header h3 {
+            color: #ffd700;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-clear-all {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 2px solid #f44336;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-clear-all:hover {
+            background: rgba(244, 67, 54, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Вкладки */
+        .notifications-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid rgba(255, 152, 0, 0.2);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: #80deea;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ffd700;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: rgba(255, 152, 0, 0.1);
+            color: #b3e5fc;
+        }
+
+        .tab-count {
+            background: #ff4081;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Контент уведомлений */
+        .notifications-content {
+            height: 400px;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+            height: 100%;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .notifications-list {
+            height: 100%;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .notifications-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notifications-list::-webkit-scrollbar-track {
+            background: rgba(255, 152, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        .notifications-list::-webkit-scrollbar-thumb {
+            background: #ff9800;
+            border-radius: 3px;
+        }
+
+        /* Отдельное уведомление */
+        .notification-item {
+            background: rgba(30, 30, 60, 0.8);
+            border: 2px solid #673ab7;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification-item.unread {
+            border-color: #00bcd4;
+            background: rgba(0, 188, 212, 0.1);
+        }
+
+        .notification-item.unread::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #00bcd4;
+            border-radius: 50%;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .notification-title {
+            color: #80deea;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-time {
+            color: #b3e5fc;
+            font-size: 0.7rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .notification-body {
+            color: #b3e5fc;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .notification-body p {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-body i {
+            color: #ffd700;
+            width: 16px;
+        }
+
+        /* Действия для уведомлений */
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-notification-action {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn-accept {
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white;
+        }
+
+        .btn-decline {
+            background: linear-gradient(135deg, #f44336, #C62828);
+            color: white;
+        }
+
+        .btn-view {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-accept:hover {
+            background: linear-gradient(135deg, #388E3C, #1B5E20);
+            transform: translateY(-2px);
+        }
+
+        .btn-decline:hover {
+            background: linear-gradient(135deg, #C62828, #B71C1C);
+            transform: translateY(-2px);
+        }
+
+        .btn-view:hover {
+            background: linear-gradient(135deg, #1976d2, #1565C0);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        /* Пустые уведомления */
+        .empty-notifications {
+            text-align: center;
+            padding: 40px 20px;
+            color: #80deea;
+        }
+
+        .empty-notifications i {
+            font-size: 3rem;
+            color: rgba(128, 222, 234, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .empty-notifications p {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Футер меню */
+        .notifications-footer {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid rgba(255, 152, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .btn-mark-read,
+        .btn-close-menu {
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-mark-read {
+            background: rgba(0, 188, 212, 0.2);
+            color: #00bcd4;
+            border: 2px solid #00bcd4;
+        }
+
+        .btn-close-menu {
+            background: rgba(158, 158, 158, 0.2);
+            color: #9e9e9e;
+            border: 2px solid #9e9e9e;
+        }
+
+        .btn-mark-read:hover {
+            background: rgba(0, 188, 212, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-close-menu:hover {
+            background: rgba(158, 158, 158, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .notifications-wrapper {
+                top: 15px;
+                right: 15px;
+            }
+
+            .notifications-icon-container {
+                width: 50px;
+                height: 50px;
+            }
+
+            .notifications-icon-container i {
+                font-size: 1.5rem;
+            }
+
+            .notification-badge {
+                width: 20px;
+                height: 20px;
+                font-size: 0.6rem;
+            }
+
+            .notifications-menu {
+                width: calc(100vw - 30px);
+                max-width: 350px;
+                top: 65px;
+                right: 0;
+            }
+
+            .tab-btn {
+                padding: 12px 10px;
+                font-size: 0.7rem;
+            }
+
+            .notification-actions {
+                flex-direction: column;
+            }
+
+            .btn-notification-action {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .notifications-wrapper {
+                top: 10px;
+                right: 10px;
+            }
+
+            .notifications-menu {
+                width: calc(100vw - 20px);
+            }
+
+            .notifications-header h3 {
+                font-size: 0.9rem;
+            }
+
+            .btn-clear-all,
+            .btn-mark-read,
+            .btn-close-menu {
+                font-size: 0.6rem;
+                padding: 8px 12px;
+            }
+        }
+        </style>
+</head>
+<body>
+    <!-- Добавляем аудио элементы -->
+    <audio id="backgroundMusic" src="{% static 'main/sounds/bg.mp3' %}" loop></audio>
+    <audio id="catSound" preload="auto">
+        <source src="{% static 'main/sounds/meow1.mp3' %}" type="audio/mpeg">
+        <source src="{% static 'main/sounds/meow2.mp3' %}" type="audio/mpeg">
+        <source src="{% static 'main/sounds/meow3.mp3' %}" type="audio/mpeg">
+    </audio>
+    <audio id="clickSound" src="{% static 'main/sounds/click.mp3' %}" preload="auto"></audio>
+
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-content">
+                    <h1><i class="fas fa-mouse-pointer"></i> КОСАТКА КЛИК REMASTER</h1>
+
+                    <!-- Кнопка мобильного меню -->
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Меню">
+                        <i class="fas fa-bars"></i>
+                    </button>
+
+                    <!-- Десктопная навигация -->
+                    <div class="nav-links desktop-nav">
+                        <a href="{% url 'index' %}" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                            <i class="fas fa-home"></i> Главная
+                        </a>
+                        <a href="{% url 'leaderboard' %}" class="nav-link {% if request.path == '/leaderboard/' %}active{% endif %}">
+                            <i class="fas fa-trophy"></i> Таблица лидеров
+                        </a>
+
+                        <a href="{% url 'skins' %}" class="nav-link {% if request.path == '/skins/' %}active{% endif %}">
+                            <i class="fas fa-palette"></i> Скины
+                        </a>
+                        <a href="{% url 'achievements' %}" class="nav-link {% if request.path == '/achievements/' %}active{% endif %}">
+                            <i class="fas fa-trophy"></i> Достижения
+                        </a>
+
+                        {% if user.is_authenticated %}
+                        <div class="user-info">
+                            <span class="username">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </span>
+                            <a href="{% url 'logout' %}?next={% url 'login' %}" class="nav-link logout-btn">
+                                <i class="fas fa-sign-out-alt"></i> Выйти
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="auth-links">
+                            <a href="{% url 'login' %}" class="nav-link">
+                                <i class="fas fa-sign-in-alt"></i> Войти
+                            </a>
+                            <a href="{% url 'register' %}" class="nav-link register-btn">
+                                <i class="fas fa-user-plus"></i> Регистрация
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Мобильная навигация -->
+                    <div class="mobile-nav-links" id="mobileNav">
+                        <a href="{% url 'index' %}" class="nav-link mobile-link">
+                            <i class="fas fa-home"></i> Главная
+                        </a>
+                        <a href="{% url 'leaderboard' %}" class="nav-link mobile-link">
+                            <i class="fas fa-trophy"></i> Таблица лидеров
+                        </a>
+
+                        <a href="{% url 'skins' %}" class="nav-link mobile-link">
+                            <i class="fas fa-palette"></i> Скины
+                        </a>
+                        <a href="{% url 'achievements' %}" class="nav-link mobile-link">
+                            <i class="fas fa-trophy"></i> Достижения
+                        </a>
+
+                        {% if user.is_authenticated %}
+                        <div class="user-info mobile-user">
+                            <span class="username">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </span>
+                            <a href="{% url 'logout' %}" class="nav-link logout-btn mobile-link">
+                                <i class="fas fa-sign-out-alt"></i> Выйти
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="auth-links mobile-auth">
+                            <a href="{% url 'login' %}" class="nav-link mobile-link">
+                                <i class="fas fa-sign-in-alt"></i> Войти
+                            </a>
+                            <a href="{% url 'register' %}" class="nav-link register-btn mobile-link">
+                                <i class="fas fa-user-plus"></i> Регистрация
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        {% if user.is_authenticated %}
+
+        <style>
+            /* УВЕЛИЧЕННЫЕ ХИТБОКСЫ ДЛЯ МОБИЛЬНЫХ КНОПОК */
+
+            /* Базовые стили для всех кнопок уведомлений */
+            .btn-notification-action,
+            .btn-accept-invite,
+            .btn-decline-invite,
+            .btn-view-battle,
+            .btn-accept,
+            .btn-decline,
+            .btn-view,
+            .tab-btn {
+                /* Увеличиваем хитбокс */
+                position: relative !important;
+                min-height: 50px !important;  /* Вместо 44px */
+                min-width: 50px !important;   /* Вместо 44px */
+                padding: 14px 18px !important; /* Больше padding */
+                margin: 8px !important;       /* Больше отступов */
+
+                /* Улучшаем видимость */
+                font-size: 0.85rem !important;
+                font-weight: 600 !important;
+                border-radius: 10px !important; /* Более округлые края */
+
+                /* Убираем outline и добавляем свои стили */
+                outline: none !important;
+                border: 2px solid transparent !important;
+                box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
+
+                /* Улучшаем анимацию */
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+                /* Для touch устройств */
+                -webkit-tap-highlight-color: rgba(255,255,255,0.3) !important;
+                touch-action: manipulation !important;
+                cursor: pointer !important;
+                user-select: none !important;
+                -webkit-user-drag: none !important;
+            }
+
+            /* Псевдоэлемент для увеличения хитбокса */
+            .btn-notification-action::after,
+            .btn-accept-invite::after,
+            .btn-decline-invite::after,
+            .btn-view-battle::after {
+                content: '' !important;
+                position: absolute !important;
+                top: -10px !important;
+                left: -10px !important;
+                right: -10px !important;
+                bottom: -10px !important;
+                background: transparent !important;
+                z-index: -1 !important;
+                pointer-events: none !important;
+            }
+
+            /* Специфичные стили для разных типов кнопок */
+            .btn-accept, .btn-accept-invite {
+                background: linear-gradient(135deg, #4CAF50, #2E7D32) !important;
+                border-color: #4CAF50 !important;
+            }
+
+            .btn-decline, .btn-decline-invite {
+                background: linear-gradient(135deg, #f44336, #C62828) !important;
+                border-color: #f44336 !important;
+            }
+
+            .btn-view, .btn-view-battle {
+                background: linear-gradient(135deg, #2196f3, #1976d2) !important;
+                border-color: #2196f3 !important;
+                text-decoration: none !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+
+            /* Увеличение иконок */
+            .btn-notification-action i {
+                margin-right: 10px !important;
+                font-size: 1.1rem !important;
+                min-width: 20px !important;
+                text-align: center !important;
+            }
+
+            /* Стили для контейнеров кнопок */
+            .notification-actions,
+            .invite-actions {
+                display: flex !important;
+                gap: 12px !important;
+                margin-top: 20px !important;
+                padding: 10px 5px !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+
+            /* АДАПТИВНЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ */
+            @media (max-width: 768px) {
+                /* Увеличиваем кнопки на мобильных */
+                .btn-notification-action,
+                .btn-accept-invite,
+                .btn-decline-invite,
+                .btn-view-battle,
+                .btn-accept,
+                .btn-decline,
+                .btn-view {
+                    min-height: 56px !important;  /* Еще больше на мобильных */
+                    min-width: 56px !important;
+                    padding: 16px 20px !important;
+                    margin: 10px !important;
+                    font-size: 0.9rem !important;
+                    border-radius: 12px !important;
+                }
+
+                /* Увеличиваем псевдоэлемент для еще большего хитбокса */
+                .btn-notification-action::after,
+                .btn-accept-invite::after,
+                .btn-decline-invite::after,
+                .btn-view-battle::after {
+                    top: -15px !important;
+                    left: -15px !important;
+                    right: -15px !important;
+                    bottom: -15px !important;
+                }
+
+                /* Увеличиваем контейнеры */
+                .notification-actions,
+                .invite-actions {
+                    gap: 15px !important;
+                    margin-top: 25px !important;
+                    padding: 15px 10px !important;
+                }
+
+                /* На очень маленьких экранах делаем кнопки шире */
+                @media (max-width: 480px) {
+                    .btn-notification-action,
+                    .btn-accept-invite,
+                    .btn-decline-invite,
+                    .btn-view-battle,
+                    .btn-accept,
+                    .btn-decline,
+                    .btn-view {
+                        min-height: 60px !important;
+                        padding: 18px 22px !important;
+                        font-size: 1rem !important;
+                    }
+
+                    .notification-actions,
+                    .invite-actions {
+                        gap: 10px !important;
+                        flex-wrap: wrap !important;
+                    }
+
+                    /* Делаем кнопки на всю ширину если экран очень узкий */
+                    @media (max-width: 360px) {
+                        .btn-notification-action,
+                        .btn-accept-invite,
+                        .btn-decline-invite,
+                        .btn-view-battle,
+                        .btn-accept,
+                        .btn-decline,
+                        .btn-view {
+                            width: 100% !important;
+                            max-width: 280px !important;
+                            margin: 8px auto !important;
+                        }
+
+                        .notification-actions,
+                        .invite-actions {
+                            flex-direction: column !important;
+                        }
+                    }
+                }
+            }
+
+            /* ЭФФЕКТЫ НАЖАТИЯ */
+            /* Для мобильных - более выраженный эффект */
+            @media (hover: none) and (pointer: coarse) {
+                .btn-notification-action:active,
+                .btn-accept-invite:active,
+                .btn-decline-invite:active,
+                .btn-view-battle:active,
+                .btn-accept:active,
+                .btn-decline:active,
+                .btn-view:active {
+                    transform: scale(0.92) !important;
+                    opacity: 0.85 !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+                    transition: transform 0.05s ease !important;
+                }
+            }
+
+            /* Для десктопа - hover эффекты */
+            @media (hover: hover) {
+                .btn-notification-action:hover,
+                .btn-accept-invite:hover,
+                .btn-decline-invite:hover,
+                .btn-view-battle:hover {
+                    transform: translateY(-3px) !important;
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.25) !important;
+                    filter: brightness(1.1) !important;
+                }
+            }
+
+            /* Классы для состояний */
+            .btn-notification-action.touch-active,
+            .btn-accept.touch-active,
+            .btn-decline.touch-active,
+            .btn-view.touch-active {
+                transform: scale(0.92) !important;
+                opacity: 0.85 !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+            }
+
+            /* Улучшаем кнопки вкладок */
+            .tab-btn {
+                min-height: 50px !important;
+                padding: 15px 10px !important;
+                margin: 0 2px !important;
+                font-size: 0.8rem !important;
+            }
+
+            .tab-btn.active {
+                background: rgba(255, 152, 0, 0.25) !important;
+                border: 2px solid #ff9800 !important;
+            }
+
+            /* Улучшаем иконку уведомлений для нажатия */
+            .notifications-icon-container {
+                width: 65px !important;
+                height: 65px !important;
+                padding: 5px !important;
+            }
+
+            @media (max-width: 768px) {
+                .notifications-icon-container {
+                    width: 70px !important;
+                    height: 70px !important;
+                }
+            }
+
+            /* Увеличиваем счетчик уведомлений */
+            .notification-badge {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 0.8rem !important;
+                top: -8px !important;
+                right: -8px !important;
+            }
+
+            /* Улучшаем отображение текста в кнопках */
+            .btn-notification-action span {
+                display: inline-block !important;
+                vertical-align: middle !important;
+                line-height: 1.3 !important;
+            }
+
+            /* Убираем возможные перекрытия z-index */
+            .notifications-menu {
+                z-index: 10000 !important;
+            }
+
+            .notifications-icon-container {
+                z-index: 10001 !important;
+            }
+        </style>
+
+        <style>
+            /* Контейнер для кнопки звука */
+            .sound-control-container {
+                position: fixed;
+                top: 120px; /* Отступ от верха, ниже навигации */
+                right: 30px;
+                z-index: 999;
+                transition: all 0.3s ease;
+            }
+
+            /* Контейнер для уведомлений */
+            .notifications-wrapper {
+                position: fixed;
+                top: 120px; /* Такая же высота как у звука */
+                right: 100px; /* Сдвинуто влево от звука */
+                z-index: 999;
+                transition: all 0.3s ease;
+            }
+
+            /* Кнопка звука */
+            .sound-toggle-btn {
+                width: 65px;
+                height: 65px;
+                background: linear-gradient(135deg, #2196f3, #1976d2);
+                border: 3px solid #00bcd4;
+                border-radius: 50%;
+                color: white;
+                font-size: 1.6rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+                transition: all 0.3s;
+            }
+
+            .sound-toggle-btn:hover {
+                background: linear-gradient(135deg, #1976d2, #1565c0);
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(33, 150, 243, 0.6);
+            }
+
+            .sound-toggle-btn.muted {
+                background: linear-gradient(135deg, #757575, #616161);
+                border-color: #9e9e9e;
+            }
+
+            .sound-toggle-btn.muted i {
+                color: #ff5252;
+            }
+
+            /* Значок уведомлений */
+            .notifications-icon-container {
+                width: 65px;
+                height: 65px;
+                background: linear-gradient(135deg, #ff9800, #f57c00);
+                border: 3px solid #ffd700;
+                border-radius: 50%;
+                color: white;
+                font-size: 1.6rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+                transition: all 0.3s;
+                position: relative;
+            }
+
+            .notifications-icon-container:hover {
+                background: linear-gradient(135deg, #f57c00, #e65100);
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(255, 152, 0, 0.6);
+            }
+
+            .notifications-icon-container.has-invites {
+                animation: bell-ring 1s ease-in-out;
+                background: linear-gradient(135deg, #ff4081, #C2185B);
+            }
+
+            .notification-badge {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: #f44336;
+                color: white;
+                font-family: 'Press Start 2P', cursive;
+                font-size: 0.8rem;
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #ffd700;
+                box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+            }
+
+            .notification-pulse {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: rgba(255, 152, 0, 0.3);
+                animation: pulse-ring 2s infinite;
+            }
+
+            @keyframes bell-ring {
+                0%, 100% { transform: rotate(0); }
+                25% { transform: rotate(15deg); }
+                75% { transform: rotate(-15deg); }
+            }
+
+            @keyframes pulse-ring {
+                0% { transform: scale(0.8); opacity: 1; }
+                100% { transform: scale(1.5); opacity: 0; }
+            }
+
+            /* Меню уведомлений (остается прежним, но сдвигаем) */
+            .notifications-menu {
+                position: absolute;
+                top: 75px; /* Отступ от иконки */
+                right: 0;
+                width: 400px;
+                max-height: 600px;
+                background: linear-gradient(135deg,
+                    rgba(20, 20, 40, 0.98),
+                    rgba(10, 10, 30, 0.98));
+                border: 3px solid #ff9800;
+                border-radius: 15px;
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(10px);
+                display: none;
+                overflow: hidden;
+                z-index: 1000;
+            }
+
+            .notifications-menu.show {
+                display: block;
+                animation: slideDown 0.3s ease-out;
+            }
+
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ */
+            @media (max-width: 768px) {
+                .sound-control-container {
+                    top: 100px;
+                    right: 20px;
+                }
+
+                .notifications-wrapper {
+                    top: 100px;
+                    right: 90px;
+                }
+
+                .sound-toggle-btn,
+                .notifications-icon-container {
+                    width: 55px;
+                    height: 55px;
+                    font-size: 1.4rem;
+                }
+
+                .notification-badge {
+                    width: 22px;
+                    height: 22px;
+                    font-size: 0.7rem;
+                }
+
+                .notifications-menu {
+                    width: calc(100vw - 40px);
+                    max-width: 350px;
+                    top: 65px;
+                    right: 0;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .sound-control-container {
+                    top: 90px;
+                    right: 15px;
+                }
+
+                .notifications-wrapper {
+                    top: 90px;
+                    right: 80px;
+                }
+
+                .sound-toggle-btn,
+                .notifications-icon-container {
+                    width: 50px;
+                    height: 50px;
+                    font-size: 1.2rem;
+                }
+
+                .notification-badge {
+                    width: 20px;
+                    height: 20px;
+                    font-size: 0.6rem;
+                }
+
+                .notifications-menu {
+                    width: calc(100vw - 30px);
+                    max-width: 300px;
+                }
+            }
+
+            /* Для очень маленьких экранов группируем кнопки */
+            @media (max-width: 360px) {
+                .sound-control-container {
+                    top: 85px;
+                    right: 10px;
+                }
+
+                .notifications-wrapper {
+                    top: 85px;
+                    right: 70px;
+                }
+
+                .sound-toggle-btn,
+                .notifications-icon-container {
+                    width: 45px;
+                    height: 45px;
+                    font-size: 1rem;
+                }
+            }
+
+            /* Стиль для страниц без статистики (например, регистрация/логин) */
+            .no-stats-page .sound-control-container,
+            .no-stats-page .notifications-wrapper {
+                top: 150px; /* Больший отступ если нет статистики */
+            }
+        </style>
+
+        <style>
+            .sound-control {
+                position: fixed;
+                top: 20px;
+                right: 100px;
+                z-index: 1001;
+            }
+
+            .sound-toggle-btn {
+                width: 60px;
+                height: 60px;
+                background: linear-gradient(135deg, #2196f3, #1976d2);
+                border: 3px solid #00bcd4;
+                border-radius: 50%;
+                color: white;
+                font-size: 1.5rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+                transition: all 0.3s;
+            }
+
+            .sound-toggle-btn:hover {
+                background: linear-gradient(135deg, #1976d2, #1565c0);
+                transform: scale(1.1);
+            }
+
+            .sound-toggle-btn.muted {
+                background: linear-gradient(135deg, #757575, #616161);
+                border-color: #9e9e9e;
+            }
+
+            .sound-toggle-btn.muted i {
+                color: #ff5252;
+            }
+
+            @media (max-width: 768px) {
+                .sound-control {
+                    top: 15px;
+                    right: 90px;
+                }
+
+                .sound-toggle-btn {
+                    width: 50px;
+                    height: 50px;
+                    font-size: 1.2rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .sound-control {
+                    top: 15px;
+                    right: 80px;
+                }
+
+                .sound-toggle-btn {
+                    width: 45px;
+                    height: 45px;
+                    font-size: 1rem;
+                }
+            }
+        </style>
+
+        <script>
+            // Управление кнопкой звука
+            document.addEventListener('DOMContentLoaded', function() {
+                const soundToggle = document.getElementById('soundToggle');
+                const soundControlContainer = document.getElementById('soundControlContainer');
+                const notificationsWrapper = document.getElementById('notificationsWrapper');
+
+                if (soundToggle) {
+                    // Обновляем иконку при загрузке
+                    updateSoundIcon();
+
+                    soundToggle.addEventListener('click', function() {
+                        if (window.audioManager) {
+                            const wasEnabled = !window.audioManager.isMuted;
+                            const isEnabled = window.audioManager.toggleMute();
+
+                            // Обновляем иконку
+                            updateSoundIcon();
+
+                            // Показываем уведомление
+                            showSoundNotification(isEnabled ? 'Звук включен' : 'Звук выключен');
+                        } else {
+                            console.warn('Audio manager not initialized');
+                        }
+                    });
+
+                    // Обновление иконки звука
+                    function updateSoundIcon() {
+                        if (!window.audioManager) return;
+
+                        const isEnabled = !window.audioManager.isMuted;
+                        const icon = soundToggle.querySelector('i');
+
+                        if (isEnabled) {
+                            soundToggle.classList.remove('muted');
+                            icon.className = 'fas fa-volume-up';
+                        } else {
+                            soundToggle.classList.add('muted');
+                            icon.className = 'fas fa-volume-mute';
+                        }
+                    }
+
+                    // Функция показа уведомления
+                    function showSoundNotification(message) {
+                        const notification = document.createElement('div');
+                        notification.className = 'sound-notification';
+                        notification.textContent = message;
+                        notification.style.cssText = `
+                            position: fixed;
+                            top: 190px; /* Ниже кнопок */
+                            right: 30px;
+                            background: rgba(33, 150, 243, 0.95);
+                            color: white;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            z-index: 1002;
+                            font-family: 'Press Start 2P', cursive;
+                            font-size: 0.7rem;
+                            animation: fadeInOut 2s ease forwards;
+                            border: 2px solid #00bcd4;
+                            box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+                        `;
+
+                        // Добавляем анимацию
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            @keyframes fadeInOut {
+                                0% { opacity: 0; transform: translateY(-10px); }
+                                20% { opacity: 1; transform: translateY(0); }
+                                80% { opacity: 1; transform: translateY(0); }
+                                100% { opacity: 0; transform: translateY(-10px); }
+                            }
+                        `;
+                        document.head.appendChild(style);
+
+                        document.body.appendChild(notification);
+
+                        // Удаляем через 2 секунды
+                        setTimeout(() => {
+                            notification.remove();
+                            style.remove();
+                        }, 2000);
+                    }
+                }
+
+                // Добавляем проверку на инициализацию audioManager
+                if (!window.audioManager) {
+                    console.log('Initializing audio manager...');
+                }
+
+                // Автоматически позиционируем кнопки относительно статистики
+                function positionButtonsRelativeToStats() {
+                    const statsElement = document.querySelector('.stats-container, #player-stats, .player-info');
+
+                    if (statsElement && soundControlContainer && notificationsWrapper) {
+                        const statsRect = statsElement.getBoundingClientRect();
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+                        // Позиционируем кнопки на 20px ниже статистики
+                        const targetTop = statsRect.bottom + scrollTop + 20;
+
+                        soundControlContainer.style.top = targetTop + 'px';
+                        notificationsWrapper.style.top = targetTop + 'px';
+                    }
+                }
+
+                // Позиционируем при загрузке и изменении размера окна
+                setTimeout(positionButtonsRelativeToStats, 100);
+                window.addEventListener('resize', positionButtonsRelativeToStats);
+                window.addEventListener('scroll', positionButtonsRelativeToStats);
+
+                // Также обновляем при открытии/закрытии меню уведомлений
+                const notificationsIcon = document.getElementById('notificationsIcon');
+                if (notificationsIcon) {
+                    notificationsIcon.addEventListener('click', () => {
+                        setTimeout(positionButtonsRelativeToStats, 300);
+                    });
+                }
+            });
+        </script>
+        {% endif %}
+    </header>
+
+    {% if user.is_authenticated %}
+    <!-- Кнопка управления звуком - теперь внутри контейнера -->
+    <div class="sound-control-container" id="soundControlContainer">
+        <button id="soundToggle" class="sound-toggle-btn" aria-label="Включить/выключить звук">
+            <i class="fas fa-volume-up"></i>
+        </button>
+    </div>
+
+    <!-- Уведомления на всю страницу -->
+    <div class="notifications-wrapper" id="notificationsWrapper">
+        <!-- Кнопка/значок уведомлений -->
+        <div class="notifications-icon-container" id="notificationsIcon">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge" id="notificationBadge">0</span>
+            <div class="notification-pulse"></div>
+        </div>
+
+        <div class="notifications-menu" id="notificationsMenu">
+            <div class="notifications-header">
+                <h3><i class="fas fa-bell"></i> Уведомления</h3>
+                <button class="btn-clear-all" id="btnClearAll">
+                    <i class="fas fa-trash"></i> Очистить все
+                </button>
+            </div>
+
+            <div class="notifications-tabs">
+                <button class="tab-btn active" data-tab="invites">
+                    <i class="fas fa-user-plus"></i> Приглашения
+                    <span class="tab-count" id="invitesTabCount">0</span>
+                </button>
+                <button class="tab-btn" data-tab="system">
+                    <i class="fas fa-info-circle"></i> Системные
+                    <span class="tab-count" id="systemTabCount">0</span>
+                </button>
+                <button class="tab-btn" data-tab="achievements">
+                    <i class="fas fa-trophy"></i> Достижения
+                    <span class="tab-count" id="achievementsTabCount">0</span>
+                </button>
+            </div>
+
+            <div class="notifications-content">
+                <!-- Вкладка приглашений -->
+                <div class="tab-content active" id="tabInvites">
+                    <div class="notifications-list" id="invitesList">
+                        <!-- Приглашения будут добавляться сюда динамически -->
+                        <div class="empty-notifications">
+                            <i class="fas fa-user-plus"></i>
+                            <p>Нет новых приглашений</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Вкладка системных уведомлений -->
+                <div class="tab-content" id="tabSystem">
+                    <div class="notifications-list" id="systemList">
+                        <div class="empty-notifications">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Нет системных уведомлений</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notifications-footer">
+                <button class="btn-mark-read" id="btnMarkRead">
+                    <i class="fas fa-check-double"></i> Отметить все как прочитанные
+                </button>
+                <button class="btn-close-menu" id="btnCloseMenu">
+                    <i class="fas fa-times"></i> Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+
+    <script>
+        (function() {
+            // Функция для получения CSRF токена
+            function getCSRFToken() {
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken) {
+                    return metaToken.getAttribute('content');
+                }
+
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith('csrftoken=')) {
+                        return cookie.substring('csrftoken='.length);
+                    }
+                }
+
+                return null;
+            }
+
+            window.csrfToken = getCSRFToken();
+
+            // Функция для определения мобильного устройства
+            function isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            }
+
+            // Инициализация при загрузке DOM
+            document.addEventListener('DOMContentLoaded', function() {
+                const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+                const mobileNav = document.getElementById('mobileNav');
+                const desktopNav = document.querySelector('.desktop-nav');
+                const isMobile = isMobileDevice();
+
+                // Настройка отображения в зависимости от устройства
+                if (isMobile) {
+                    // На мобильных
+                    if (desktopNav) desktopNav.style.display = 'none';
+                    if (mobileMenuBtn) mobileMenuBtn.style.display = 'flex';
+                    document.body.classList.add('mobile-device');
+                } else {
+                    // На десктопе
+                    if (desktopNav) desktopNav.style.display = 'flex';
+                    if (mobileMenuBtn) mobileMenuBtn.style.display = 'none';
+                    if (mobileNav) mobileNav.classList.remove('show');
+                }
+
+                // Мобильное меню
+                if (mobileMenuBtn && mobileNav) {
+                    mobileMenuBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        mobileNav.classList.toggle('show');
+                        const icon = mobileMenuBtn.querySelector('i');
+                        if (mobileNav.classList.contains('show')) {
+                            icon.classList.remove('fa-bars');
+                            icon.classList.add('fa-times');
+                        } else {
+                            icon.classList.remove('fa-times');
+                            icon.classList.add('fa-bars');
+                        }
+                    });
+
+                    // Закрытие меню при клике на ссылку
+                    document.querySelectorAll('.mobile-link').forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            // Не предотвращаем стандартное поведение, чтобы ссылка работала
+                            mobileNav.classList.remove('show');
+                            const icon = mobileMenuBtn.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('fa-times');
+                                icon.classList.add('fa-bars');
+                            }
+                        });
+                    });
+
+                    // Закрытие меню при клике вне его
+                    document.addEventListener('click', function(e) {
+                        if (mobileNav.classList.contains('show') && 
+                            !mobileNav.contains(e.target) && 
+                            !mobileMenuBtn.contains(e.target)) {
+                            mobileNav.classList.remove('show');
+                            const icon = mobileMenuBtn.querySelector('i');
+                            if (icon) {
+                                icon.classList.remove('fa-times');
+                                icon.classList.add('fa-bars');
+                            }
+                        }
+                    });
+                }
+
+                // Обработчики приглашений
+                const invitesBell = document.getElementById('invitesBell');
+                const invitesNotification = document.getElementById('invitesNotification');
+                const closeInvitesBtn = document.getElementById('closeInvitesBtn');
+
+                if (invitesBell) {
+                    invitesBell.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (typeof window.toggleInvites === 'function') {
+                            window.toggleInvites();
+                        }
+                    });
+                }
+
+                if (closeInvitesBtn) {
+                    closeInvitesBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (typeof window.closeInvites === 'function') {
+                            window.closeInvites();
+                        }
+                    });
+                }
+
+                // Удаляем все inline обработчики onclick
+                document.querySelectorAll('[onclick]').forEach(function(el) {
+                    const onclickValue = el.getAttribute('onclick');
+                    if (onclickValue) {
+                        // Заменяем inline обработчики на современные
+                        if (onclickValue.includes('toggleInvites')) {
+                            el.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                if (typeof window.toggleInvites === 'function') {
+                                    window.toggleInvites();
+                                }
+                            });
+                        } else if (onclickValue.includes('closeInvites')) {
+                            el.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                if (typeof window.closeInvites === 'function') {
+                                    window.closeInvites();
+                                }
+                            });
+                        }
+                        el.removeAttribute('onclick');
+                    }
+                });
+
+                // Глобальные функции
+                window.toggleInvites = function() {
+                    if (invitesNotification) {
+                        invitesNotification.style.display = 
+                            invitesNotification.style.display === 'none' ? 'block' : 'none';
+                    }
+                };
+
+                window.closeInvites = function() {
+                    if (invitesNotification) {
+                        invitesNotification.style.display = 'none';
+                    }
+                };
+
+                window.base_invitePlayer = function(playerId) {
+                    if (!playerId) {
+                        console.warn('playerId не указан');
+                        return false;
+                    }
+                    console.log('Приглашение для игрока:', playerId);
+                    // Здесь будет реальная логика
+                    return true;
+                };
+
+                // Оптимизация для мобильных устройств
+                if (isMobile) {
+                    // Предотвращаем масштабирование при двойном тапе
+                    let lastTouchEnd = 0;
+                    document.addEventListener('touchend', function(e) {
+                        const now = Date.now();
+                        if (now - lastTouchEnd < 300) {
+                            e.preventDefault();
+                        }
+                        lastTouchEnd = now;
+                    }, false);
+
+                    // Улучшаем отзывчивость для кликов
+                    document.querySelectorAll('.click-button, .buy-button, button').forEach(function(btn) {
+                        btn.addEventListener('touchstart', function() {
+                            this.classList.add('touch-active');
+                        }, { passive: true });
+                        
+                        btn.addEventListener('touchend', function() {
+                            this.classList.remove('touch-active');
+                        }, { passive: true });
+                        
+                        btn.addEventListener('touchcancel', function() {
+                            this.classList.remove('touch-active');
+                        }, { passive: true });
+                    });
+                }
+            });
+        })();
+    </script>
+    <script>
+        (function() {
+            // Блокировка контекстного меню на кнопке кликера
+            const clickButton = document.getElementById('click-button');
+            if (clickButton) {
+                clickButton.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+
+                // Блокировка выделения при долгом нажатии
+                clickButton.addEventListener('selectstart', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+
+            // Блокировка выделения на всех кнопках покупки
+            document.querySelectorAll('.buy-button').forEach(function(btn) {
+                btn.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+
+                btn.addEventListener('selectstart', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+            });
+
+            // Глобальная блокировка выделения для iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.addEventListener('touchstart', function(e) {
+                    if (e.target.tagName === 'BUTTON' ||
+                        e.target.classList.contains('click-button') ||
+                        e.target.classList.contains('buy-button')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
+        })();
+    </script>
+    <script>
+        // Глобальные функции для работы с приглашениями
+        window.checkInvites = function() {
+            if (!document.getElementById('invitesBell')) return;
+
+            fetch('/get-invites/', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateInvitesDisplay(data.invites);
+                }
+            })
+            .catch(error => console.error('Error checking invites:', error));
+        };
+
+        function updateInvitesDisplay(invites) {
+            const invitesBell = document.getElementById('invitesBell');
+            const invitesCount = document.getElementById('invitesCount');
+            const invitesList = document.getElementById('invitesList');
+
+            if (!invitesBell || !invitesCount) return;
+
+            if (invites.length > 0) {
+                invitesBell.style.display = 'flex';
+                invitesCount.textContent = invites.length;
+
+                // Добавляем анимацию
+                invitesBell.classList.add('has-invites');
+
+                // Показываем уведомление если это первое приглашение
+                if (parseInt(invitesCount.textContent) === invites.length) {
+                    showInviteNotification(`У вас ${invites.length} новое приглашение!`);
+                }
+            } else {
+                invitesBell.style.display = 'none';
+                invitesBell.classList.remove('has-invites');
+            }
+
+            if (invitesList) {
+                invitesList.innerHTML = '';
+                invites.forEach(invite => {
+                    const inviteElement = document.createElement('div');
+                    inviteElement.className = 'invite-item';
+                    inviteElement.innerHTML = `
+                        <div class="invite-header">
+                            <strong>${invite.battle_name}</strong>
+                            <span class="invite-time">${invite.created_at}</span>
+                        </div>
+                        <div class="invite-body">
+                            <p><i class="fas fa-user"></i> От: ${invite.invited_by}</p>
+                            <p><i class="fas fa-users"></i> Участников: ${invite.current_participants}/${invite.max_players}</p>
+                            <p><i class="fas fa-coins"></i> Приз: ${invite.prize_pool} монет</p>
+                            <p><i class="fas fa-clock"></i> Длительность: ${invite.duration} сек</p>
+                        </div>
+                        <div class="invite-actions">
+                            <button class="btn-accept-invite" data-invite-id="${invite.id}">
+                                <i class="fas fa-check"></i> Принять
+                            </button>
+                            <button class="btn-decline-invite" data-invite-id="${invite.id}">
+                                <i class="fas fa-times"></i> Отклонить
+                            </button>
+                            <a href="/battles/${invite.battle_id}/" class="btn-view-battle">
+                                <i class="fas fa-eye"></i> Посмотреть
+                            </a>
+                        </div>
+                    `;
+                    invitesList.appendChild(inviteElement);
+                });
+
+                // Добавляем обработчики для кнопок
+                document.querySelectorAll('.btn-accept-invite').forEach(button => {
+                    button.addEventListener('click', function() {
+                        respondToInvite(this.dataset.inviteId, 'accept');
+                    });
+                });
+
+                document.querySelectorAll('.btn-decline-invite').forEach(button => {
+                    button.addEventListener('click', function() {
+                        respondToInvite(this.dataset.inviteId, 'decline');
+                    });
+                });
+            }
+        }
+
+        function respondToInvite(inviteId, response) {
+            const csrfToken = getCsrfToken();
+
+            fetch('/respond-invite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    invite_id: inviteId,
+                    response: response
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем список приглашений
+                    window.checkInvites();
+
+                    if (response === 'accept' && data.battle_id) {
+                        // Перенаправляем в батл если приняли
+                        setTimeout(() => {
+                            window.location.href = `/battles/${data.battle_id}/`;
+                        }, 500);
+                    }
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error responding to invite:', error);
+                alert('Ошибка при обработке приглашения');
+            });
+        }
+
+        function showInviteNotification(message) {
+            // Создаем временное уведомление
+            const notification = document.createElement('div');
+            notification.className = 'global-notification';
+            notification.innerHTML = `
+                <i class="fas fa-bell"></i>
+                <span>${message}</span>
+                <button class="btn-close-notification">&times;</button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Автоматическое скрытие через 5 секунд
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+
+            // Обработчик закрытия
+            notification.querySelector('.btn-close-notification').addEventListener('click', () => {
+                notification.remove();
+            });
+        }
+
+        // Функция для получения CSRF токена
+        function getCsrfToken() {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+
+            if (csrfMeta) return csrfMeta.getAttribute('content');
+            if (csrfInput) return csrfInput.value;
+
+            // Ищем в cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith('csrftoken=')) {
+                    return cookie.substring('csrftoken='.length);
+                }
+            }
+
+            return null;
+        }
+
+        // Проверяем приглашения каждые 10 секунд
+        setInterval(window.checkInvites, 10000);
+
+        // Проверяем сразу при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем звонок приглашений
+            const invitesBell = document.getElementById('invitesBell');
+            const invitesNotification = document.getElementById('invitesNotification');
+            const closeInvitesBtn = document.getElementById('closeInvitesBtn');
+
+            if (invitesBell) {
+                invitesBell.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (invitesNotification) {
+                        const isHidden = invitesNotification.style.display === 'none' ||
+                                        invitesNotification.style.display === '';
+
+                        if (isHidden) {
+                            invitesNotification.style.display = 'block';
+                            // Проверяем актуальные приглашения при открытии
+                            window.checkInvites();
+                        } else {
+                            invitesNotification.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            if (closeInvitesBtn) {
+                closeInvitesBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (invitesNotification) {
+                        invitesNotification.style.display = 'none';
+                    }
+                });
+            }
+
+            // Закрытие при клике вне окна
+            document.addEventListener('click', function(e) {
+                if (invitesNotification &&
+                    invitesNotification.style.display === 'block' &&
+                    !invitesNotification.contains(e.target) &&
+                    (!invitesBell || !invitesBell.contains(e.target))) {
+                    invitesNotification.style.display = 'none';
+                }
+            });
+
+            // Первая проверка через 1 секунду после загрузки
+            setTimeout(window.checkInvites, 1000);
+        });
+        </script>
+        <script>
+                // Глобальные функции для работы с уведомлениями
+                class NotificationManager {
+                    constructor() {
+                        this.init();
+                        this.setupEventListeners();
+                        this.startPolling();
+                    }
+
+                    init() {
+                        this.notificationsIcon = document.getElementById('notificationsIcon');
+                        this.notificationsMenu = document.getElementById('notificationsMenu');
+                        this.notificationBadge = document.getElementById('notificationBadge');
+                        this.invitesTabCount = document.getElementById('invitesTabCount');
+                        this.systemTabCount = document.getElementById('systemTabCount');
+                        this.invitesList = document.getElementById('invitesList');
+                        this.systemList = document.getElementById('systemList');
+
+                        this.invites = [];
+                        this.systemNotifications = [];
+                        this.unreadCount = 0;
+                    }
+
+                    setupEventListeners() {
+                        // Открытие/закрытие меню
+                        if (this.notificationsIcon) {
+                            this.notificationsIcon.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.toggleMenu();
+                            });
+                        }
+
+                        // Закрытие меню
+                        document.getElementById('btnCloseMenu')?.addEventListener('click', () => {
+                            this.closeMenu();
+                        });
+
+                        // Закрытие при клике вне меню
+                        document.addEventListener('click', (e) => {
+                            if (this.notificationsMenu?.classList.contains('show') &&
+                                !this.notificationsMenu.contains(e.target) &&
+                                !this.notificationsIcon?.contains(e.target)) {
+                                this.closeMenu();
+                            }
+                        });
+
+                        // Переключение вкладок
+                        document.querySelectorAll('.tab-btn').forEach(tab => {
+                            tab.addEventListener('click', () => {
+                                this.switchTab(tab.dataset.tab);
+                            });
+                        });
+
+                        // Очистка всех уведомлений
+                        document.getElementById('btnClearAll')?.addEventListener('click', () => {
+                            this.clearAllNotifications();
+                        });
+
+                        // Отметить все как прочитанные
+                        document.getElementById('btnMarkRead')?.addEventListener('click', () => {
+                            this.markAllAsRead();
+                        });
+                    }
+
+                    toggleMenu() {
+                        if (!this.notificationsMenu) return;
+
+                        if (this.notificationsMenu.classList.contains('show')) {
+                            this.closeMenu();
+                        } else {
+                            this.openMenu();
+                        }
+                    }
+
+                    openMenu() {
+                        this.notificationsMenu.classList.add('show');
+                        this.loadNotifications();
+                    }
+
+                    closeMenu() {
+                        this.notificationsMenu.classList.remove('show');
+                    }
+
+                    switchTab(tabName) {
+                        // Убираем активный класс со всех вкладок
+                        document.querySelectorAll('.tab-btn').forEach(tab => {
+                            tab.classList.remove('active');
+                        });
+
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.classList.remove('active');
+                        });
+
+                        // Добавляем активный класс выбранной вкладке
+                        document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
+                        document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`)?.classList.add('active');
+                    }
+
+                    async loadNotifications() {
+                        try {
+                            // Загружаем приглашения
+                            const response = await fetch('/get-invites/', {
+                                headers: {
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success) {
+                                    this.invites = data.invites || [];
+                                    this.updateInvitesList();
+                                    this.updateBadge();
+                                }
+                            }
+
+                            // Здесь можно добавить загрузку системных уведомлений
+
+                        } catch (error) {
+                            console.error('Error loading notifications:', error);
+                        }
+                    }
+
+                    updateInvitesList() {
+                        if (!this.invitesList) return;
+
+                        if (this.invites.length === 0) {
+                            this.invitesList.innerHTML = `
+                                <div class="empty-notifications">
+                                    <i class="fas fa-user-plus"></i>
+                                    <p>Нет новых приглашений</p>
+                                </div>
+                            `;
+                            this.invitesTabCount.textContent = '0';
+                            return;
+                        }
+
+                        this.invitesTabCount.textContent = this.invites.length;
+
+                        let html = '';
+                        this.invites.forEach(invite => {
+                            html += `
+                                <div class="notification-item unread" data-invite-id="${invite.id}">
+                                    <div class="notification-header">
+                                        <h4 class="notification-title">
+                                            <i class="fas fa-user-plus"></i>
+                                            Приглашение в батл
+                                        </h4>
+                                        <span class="notification-time">${invite.created_at}</span>
+                                    </div>
+                                    <div class="notification-body">
+                                        <p><i class="fas fa-gamepad"></i> ${invite.battle_name}</p>
+                                        <p><i class="fas fa-user"></i> От: ${invite.invited_by}</p>
+                                        <p><i class="fas fa-users"></i> Участников: ${invite.current_participants}/${invite.max_players}</p>
+                                        <p><i class="fas fa-coins"></i> Приз: ${invite.prize_pool} монет</p>
+                                        <p><i class="fas fa-clock"></i> Длительность: ${invite.duration} сек</p>
+                                    </div>
+                                    <div class="notification-actions">
+                                        <button class="btn-notification-action btn-accept" data-invite-id="${invite.id}">
+                                            <i class="fas fa-check"></i> Принять
+                                        </button>
+                                        <button class="btn-notification-action btn-decline" data-invite-id="${invite.id}">
+                                            <i class="fas fa-times"></i> Отклонить
+                                        </button>
+                                        <a href="/battles/${invite.battle_id}/"
+                                           class="btn-notification-action btn-view">
+                                            <i class="fas fa-eye"></i> Посмотреть
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        this.invitesList.innerHTML = html;
+
+                        // Добавляем обработчики для новых кнопок
+                        this.attachInviteHandlers();
+                    }
+
+                    attachInviteHandlers() {
+                        // Обработчики для кнопок "Принять"
+                        document.querySelectorAll('.btn-accept[data-invite-id]').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                const inviteId = button.getAttribute('data-invite-id');
+                                this.acceptInvite(inviteId);
+                            });
+                        });
+
+                        // Обработчики для кнопок "Отклонить"
+                        document.querySelectorAll('.btn-decline[data-invite-id]').forEach(button => {
+                            button.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                const inviteId = button.getAttribute('data-invite-id');
+                                this.declineInvite(inviteId);
+                            });
+                        });
+                    }
+
+                    async acceptInvite(inviteId) {
+                        try {
+                            const csrfToken = this.getCsrfToken();
+                            console.log('Accepting invite:', inviteId);
+
+                            const response = await fetch('/respond-invite/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({
+                                    invite_id: inviteId,
+                                    response: 'accept'
+                                })
+                            });
+
+                            const data = await response.json();
+                            console.log('Response:', data);
+
+                            if (data.success) {
+                                // Удаляем уведомление из списка
+                                this.removeInvite(inviteId);
+
+                                // Показываем сообщение об успехе
+                                this.showToast('Приглашение принято!', 'success');
+
+                                // Перенаправляем в батл через 1 секунду
+                                if (data.battle_id) {
+                                    setTimeout(() => {
+                                        window.location.href = `/battles/${data.battle_id}/`;
+                                    }, 1000);
+                                }
+                            } else {
+                                this.showToast(data.error || 'Ошибка при принятии приглашения', 'error');
+                            }
+
+                        } catch (error) {
+                            console.error('Error accepting invite:', error);
+                            this.showToast('Ошибка при принятии приглашения', 'error');
+                        }
+                    }
+
+                    async declineInvite(inviteId) {
+                        try {
+                            const csrfToken = this.getCsrfToken();
+                            console.log('Declining invite:', inviteId);
+
+                            const response = await fetch('/respond-invite/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({
+                                    invite_id: inviteId,
+                                    response: 'decline'
+                                })
+                            });
+
+                            const data = await response.json();
+                            console.log('Response:', data);
+
+                            if (data.success) {
+                                // Удаляем уведомление из списка
+                                this.removeInvite(inviteId);
+                                this.showToast('Приглашение отклонено', 'success');
+                            } else {
+                                this.showToast(data.error || 'Ошибка при отклонении приглашения', 'error');
+                            }
+
+                        } catch (error) {
+                            console.error('Error declining invite:', error);
+                            this.showToast('Ошибка при отклонении приглашения', 'error');
+                        }
+                    }
+
+                    removeInvite(inviteId) {
+                        // Удаляем из массива
+                        this.invites = this.invites.filter(invite => invite.id != inviteId);
+
+                        // Удаляем из DOM
+                        const inviteElement = document.querySelector(`[data-invite-id="${inviteId}"]`);
+                        if (inviteElement) {
+                            inviteElement.remove();
+                        }
+
+                        // Обновляем счетчики
+                        this.updateBadge();
+
+                        // Если список пуст, показываем сообщение
+                        if (this.invites.length === 0) {
+                            this.updateInvitesList();
+                        }
+                    }
+
+                    updateBadge() {
+                        if (!this.notificationBadge) return;
+
+                        const totalCount = this.invites.length + this.systemNotifications.length;
+                        this.unreadCount = totalCount;
+
+                        if (totalCount > 0) {
+                            this.notificationBadge.textContent = totalCount;
+                            this.notificationBadge.style.display = 'flex';
+                        } else {
+                            this.notificationBadge.style.display = 'none';
+                        }
+                    }
+
+                    clearAllNotifications() {
+                        if (confirm('Очистить все уведомления?')) {
+                            this.invites = [];
+                            this.systemNotifications = [];
+                            this.updateInvitesList();
+                            this.updateBadge();
+                            this.showToast('Все уведомления очищены', 'info');
+                        }
+                    }
+
+                    markAllAsRead() {
+                        // Здесь можно добавить логику для отметки уведомлений как прочитанных
+                        document.querySelectorAll('.notification-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                        });
+                        this.showToast('Все уведомления отмечены как прочитанные', 'info');
+                    }
+
+                    showToast(message, type = 'info') {
+                        const toast = document.createElement('div');
+                        toast.className = `toast toast-${type}`;
+                        toast.innerHTML = `
+                            <i class="fas fa-${type === 'success' ? 'check-circle' :
+                                            type === 'error' ? 'exclamation-circle' :
+                                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                            <span>${message}</span>
+                            <button class="toast-close">&times;</button>
+                        `;
+
+                        document.body.appendChild(toast);
+
+                        // Автоматическое скрытие
+                        setTimeout(() => {
+                            toast.remove();
+                        }, 3000);
+
+                        // Закрытие по клику
+                        toast.querySelector('.toast-close').addEventListener('click', () => {
+                            toast.remove();
+                        });
+                    }
+
+                    getCsrfToken() {
+                        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+
+                        if (csrfMeta) return csrfMeta.getAttribute('content');
+                        if (csrfInput) return csrfInput.value;
+
+                        // Ищем в cookies
+                        const cookies = document.cookie.split(';');
+                        for (let cookie of cookies) {
+                            cookie = cookie.trim();
+                            if (cookie.startsWith('csrftoken=')) {
+                                return cookie.substring('csrftoken='.length);
+                            }
+                        }
+
+                        return null;
+                    }
+
+                    startPolling() {
+                        // Проверяем новые уведомления каждые 10 секунд
+                        setInterval(() => {
+                            if (!this.notificationsMenu?.classList.contains('show')) {
+                                this.checkForNewNotifications();
+                            }
+                        }, 10000);
+
+                        // Первая проверка через 2 секунды после загрузки
+                        setTimeout(() => this.checkForNewNotifications(), 2000);
+                    }
+
+                    async checkForNewNotifications() {
+                        try {
+                            const response = await fetch('/get-invites/', {
+                                headers: {
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.count > this.invites.length) {
+                                    // Есть новые уведомления
+                                    this.invites = data.invites || [];
+                                    this.updateBadge();
+
+                                    // Если меню открыто, обновляем список
+                                    if (this.notificationsMenu?.classList.contains('show')) {
+                                        this.updateInvitesList();
+                                    }
+
+                                    // Показываем тост если есть новые
+                                    if (data.count > this.unreadCount) {
+                                        this.showToast(`У вас ${data.count - this.unreadCount} новое приглашение!`, 'info');
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error checking notifications:', error);
+                        }
+                    }
+                }
+
+                // Инициализация при загрузке страницы
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Удаляем старый менеджер если есть
+                    if (window.notificationManager) {
+                        delete window.notificationManager;
+                    }
+
+                    // Создаем новый менеджер
+                    window.notificationManager = new NotificationManager();
+
+                    // Также добавляем глобальные функции для обратной совместимости
+                    window.checkInvites = function() {
+                        if (window.notificationManager) {
+                            window.notificationManager.loadNotifications();
+                        }
+                    };
+
+                    console.log('Notification manager initialized');
+                });
+            </script>
+            <script>
+                // Улучшенная обработка touch-событий для мобильных устройств
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Функция для определения мобильного устройства
+                    function isMobileDevice() {
+                        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                               (window.innerWidth <= 768);
+                    }
+
+                    const isMobile = isMobileDevice();
+
+                    // Функция для добавления обработчиков touch-событий
+                    function setupMobileTouchHandlers() {
+                        // Получаем все кнопки в уведомлениях
+                        const notificationButtons = document.querySelectorAll(
+                            '.btn-notification-action, ' +
+                            '.btn-accept-invite, ' +
+                            '.btn-decline-invite, ' +
+                            '.btn-view-battle, ' +
+                            '.btn-accept, ' +
+                            '.btn-decline, ' +
+                            '.btn-view'
+                        );
+
+                        notificationButtons.forEach(button => {
+                            // Удаляем старые обработчики если есть
+                            button.removeEventListener('touchstart', handleTouchStart);
+                            button.removeEventListener('touchend', handleTouchEnd);
+                            button.removeEventListener('touchcancel', handleTouchCancel);
+
+                            // Добавляем новые обработчики
+                            button.addEventListener('touchstart', handleTouchStart, { passive: true });
+                            button.addEventListener('touchend', handleTouchEnd, { passive: true });
+                            button.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+
+                            // Также добавляем для совместимости с мышью
+                            button.addEventListener('mousedown', handleMouseDown);
+                            button.addEventListener('mouseup', handleMouseUp);
+                            button.addEventListener('mouseleave', handleMouseLeave);
+                        });
+
+                        // Обработчики для специальных кнопок меню уведомлений
+                        const menuButtons = document.querySelectorAll(
+                            '.tab-btn, .btn-clear-all, .btn-mark-read, .btn-close-menu'
+                        );
+
+                        menuButtons.forEach(button => {
+                            button.addEventListener('touchstart', handleTouchStart, { passive: true });
+                            button.addEventListener('touchend', handleTouchEnd, { passive: true });
+                            button.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+                        });
+                    }
+
+                    // Обработчики событий
+                    function handleTouchStart(e) {
+                        const button = e.currentTarget;
+                        button.classList.add('touch-active');
+
+                        // Добавляем виброотклик если поддерживается
+                        if (navigator.vibrate && isMobile) {
+                            navigator.vibrate(10);
+                        }
+
+                        // Предотвращаем скроллинг страницы при нажатии на кнопку
+                        e.stopPropagation();
+                    }
+
+                    function handleTouchEnd(e) {
+                        const button = e.currentTarget;
+                        button.classList.remove('touch-active');
+
+                        // Добавляем небольшую задержку перед выполнением действия
+                        // чтобы пользователь видел визуальную обратную связь
+                        setTimeout(() => {
+                            // Клик сработает автоматически благодаря браузеру
+                        }, 50);
+
+                        e.stopPropagation();
+                    }
+
+                    function handleTouchCancel(e) {
+                        const button = e.currentTarget;
+                        button.classList.remove('touch-active');
+                        e.stopPropagation();
+                    }
+
+                    function handleMouseDown(e) {
+                        const button = e.currentTarget;
+                        button.classList.add('touch-active');
+                    }
+
+                    function handleMouseUp(e) {
+                        const button = e.currentTarget;
+                        button.classList.remove('touch-active');
+                    }
+
+                    function handleMouseLeave(e) {
+                        const button = e.currentTarget;
+                        button.classList.remove('touch-active');
+                    }
+
+                    // Добавляем обработчики для динамически создаваемых кнопок
+                    function setupDynamicButtonObserver() {
+                        // Используем MutationObserver для отслеживания новых кнопок
+                        const observer = new MutationObserver((mutations) => {
+                            mutations.forEach((mutation) => {
+                                if (mutation.addedNodes.length) {
+                                    // Проверяем, есть ли новые кнопки
+                                    const newButtons = [];
+                                    mutation.addedNodes.forEach(node => {
+                                        if (node.nodeType === 1) { // Element node
+                                            if (node.matches('.btn-notification-action, .btn-accept, .btn-decline, .btn-view')) {
+                                                newButtons.push(node);
+                                            }
+                                            // Также проверяем детей
+                                            node.querySelectorAll?.('.btn-notification-action, .btn-accept, .btn-decline, .btn-view').forEach(btn => {
+                                                newButtons.push(btn);
+                                            });
+                                        }
+                                    });
+
+                                    // Добавляем обработчики для новых кнопок
+                                    if (newButtons.length > 0) {
+                                        setTimeout(() => setupMobileTouchHandlers(), 100);
+                                    }
+                                }
+                            });
+                        });
+
+                        // Начинаем наблюдение за body
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                    }
+
+                    // Инициализация при загрузке
+                    if (isMobile) {
+                        // Добавляем класс для мобильных
+                        document.documentElement.classList.add('mobile-device');
+
+                        // Настраиваем обработчики
+                        setupMobileTouchHandlers();
+                        setupDynamicButtonObserver();
+
+                        // Оптимизация для iOS
+                        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                            // Убираем стандартное поведение долгого нажатия для ссылок-кнопок
+                            document.querySelectorAll('a.btn-view, a.btn-view-battle').forEach(link => {
+                                link.style['-webkit-touch-callout'] = 'none';
+                            });
+
+                            // Предотвращаем масштабирование при быстрых тапах
+                            let lastTouchEnd = 0;
+                            document.addEventListener('touchend', function(e) {
+                                const now = Date.now();
+                                if (now - lastTouchEnd <= 300) {
+                                    e.preventDefault();
+                                }
+                                lastTouchEnd = now;
+                            }, false);
+                        }
+                    }
+
+                    // Улучшенный обработчик для кнопок меню уведомлений
+                    const notificationManager = window.notificationManager;
+                    if (notificationManager && notificationManager.attachInviteHandlers) {
+                        // Сохраняем оригинальную функцию
+                        const originalAttachInviteHandlers = notificationManager.attachInviteHandlers;
+
+                        // Переопределяем с улучшенной версией
+                        notificationManager.attachInviteHandlers = function() {
+                            // Вызываем оригинальную функцию
+                            originalAttachInviteHandlers.call(this);
+
+                            // Добавляем улучшенные обработчики для мобильных
+                            if (isMobile) {
+                                // Обработчики для кнопок "Принять"
+                                document.querySelectorAll('.btn-accept[data-invite-id]').forEach(button => {
+                                    button.addEventListener('touchstart', (e) => {
+                                        e.preventDefault();
+                                        button.classList.add('button-active');
+                                    }, { passive: false });
+
+                                    button.addEventListener('touchend', (e) => {
+                                        e.preventDefault();
+                                        button.classList.remove('button-active');
+                                        const inviteId = button.getAttribute('data-invite-id');
+                                        setTimeout(() => this.acceptInvite(inviteId), 50);
+                                    }, { passive: false });
+                                });
+
+                                // Обработчики для кнопок "Отклонить"
+                                document.querySelectorAll('.btn-decline[data-invite-id]').forEach(button => {
+                                    button.addEventListener('touchstart', (e) => {
+                                        e.preventDefault();
+                                        button.classList.add('button-active');
+                                    }, { passive: false });
+
+                                    button.addEventListener('touchend', (e) => {
+                                        e.preventDefault();
+                                        button.classList.remove('button-active');
+                                        const inviteId = button.getAttribute('data-invite-id');
+                                        setTimeout(() => this.declineInvite(inviteId), 50);
+                                    }, { passive: false });
+                                });
+                            }
+                        };
+                    }
+
+                    // Глобальная функция для принудительного клика (для отладки)
+                    window.forceClick = function(selector) {
+                        const element = document.querySelector(selector);
+                        if (element) {
+                            const rect = element.getBoundingClientRect();
+                            const event = new MouseEvent('click', {
+                                view: window,
+                                bubbles: true,
+                                cancelable: true,
+                                clientX: rect.left + rect.width / 2,
+                                clientY: rect.top + rect.height / 2
+                            });
+                            element.dispatchEvent(event);
+                        }
+                    };
+
+                    console.log('Mobile touch handlers initialized');
+                });
+            </script>
+            <!-- Загрузка библиотек -->
+            <script src="https://cdn.jsdelivr.net/npm/confetti-js@0.0.18/dist/index.min.js"></script>
+
+            <!-- Load scripts without defer to fix reference errors -->
+            <script src="{% static 'main/js/audio-manager.js' %}"></script>
+            <script src="{% static 'main/js/audio-init.js' %}"></script>
+            <script src="{% static 'main/js/sound-test.js' %}"></script>
+            <script src="{% static 'main/js/confetti-effects.js' %}"></script>
+            <script src="{% static 'main/js/init-effects.js' %}"></script>
+            <script src="{% static 'main/js/clicker.js' %}"></script>
+    </body>
+</html>

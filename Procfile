@@ -1,0 +1,1 @@
+web: gunicorn CATVID.wsgi --log-file -

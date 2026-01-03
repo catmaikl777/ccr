@@ -1,0 +1,520 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Достижения - Кликер Игра{% endblock %}
+
+{% block extra_css %}
+<style>
+    .achievement-card {
+        background: rgba(20, 20, 40, 0.9);
+        border: 2px solid;
+        border-radius: 15px;
+        padding: 20px;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .achievement-card.unlocked {
+        border-color: #4CAF50;
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+    }
+
+    .achievement-card.locked {
+        border-color: #757575;
+        opacity: 0.7;
+    }
+
+    .achievement-card.new-unlocked {
+        animation: achievementGlow 2s infinite;
+        border-color: #FFD700;
+    }
+
+    .achievement-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 188, 212, 0.3);
+    }
+
+    .achievement-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        position: relative;
+    }
+
+    .new-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #FF4081;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-family: 'Press Start 2P', cursive;
+        animation: blink 1s infinite;
+    }
+
+    .achievement-rewards {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .reward {
+        background: rgba(255, 215, 0, 0.2);
+        border: 1px solid #FFD700;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+    }
+
+    .achievement-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        backdrop-filter: blur(5px);
+    }
+
+    .popup-content {
+        background: linear-gradient(135deg,
+            rgba(30, 30, 60, 0.95),
+            rgba(10, 10, 30, 0.95));
+        border: 3px solid #FFD700;
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        animation: popupAppear 0.5s ease-out;
+    }
+
+    .popup-icon {
+        font-size: 4rem;
+        color: #FFD700;
+        margin-bottom: 20px;
+    }
+
+    /* Анимации */
+    @keyframes achievementGlow {
+        0% { box-shadow: 0 0 10px #FFD700; }
+        50% { box-shadow: 0 0 30px #FF4081; }
+        100% { box-shadow: 0 0 10px #FFD700; }
+    }
+
+    @keyframes popupAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.5) translateY(-50px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .rarity-common { border-color: #808080; }
+    .rarity-uncommon { border-color: #1EFF00; }
+    .rarity-rare { border-color: #0070DD; }
+    .rarity-epic { border-color: #A335EE; }
+    .rarity-legendary { border-color: #FF8000; }
+
+    .achievements-stats .progress-bar {
+        height: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00BCD4, #FF4081);
+        transition: width 0.5s ease;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="achievements-header">
+        <h2><i class="fas fa-trophy"></i> Достижения</h2>
+        <div class="achievements-stats">
+            <div class="stat-card">
+                <h3><i class="fas fa-unlock"></i> Разблокировано</h3>
+                <p>{{ stats.unlocked }}/{{ stats.total }}</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ stats.percentage }}%"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                {% if stats_by_rarity %}
+                    {% for rarity, data in stats_by_rarity.items %}
+                    <div class="mini-stat" style="border-left: 3px solid
+                        {% if rarity == 'common' %}#808080
+                        {% elif rarity == 'uncommon' %}#1EFF00
+                        {% elif rarity == 'rare' %}#0070DD
+                        {% elif rarity == 'epic' %}#A335EE
+                        {% elif rarity == 'legendary' %}#FF8000
+                        {% else %}#FFD700{% endif %}">
+                        <span class="rarity-label">{{ data.unlocked }}/{{ data.total }}</span>
+                        <small>
+                            {% if rarity == 'common' %}Обычное
+                            {% elif rarity == 'uncommon' %}Необычное
+                            {% elif rarity == 'rare' %}Редкое
+                            {% elif rarity == 'epic' %}Эпическое
+                            {% elif rarity == 'legendary' %}Легендарное
+                            {% else %}{{ rarity|title }}{% endif %}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if new_achievements %}
+    <div class="new-achievements-section">
+        <h3><i class="fas fa-star"></i> Новые достижения</h3>
+        <div class="achievements-grid">
+            {% for pa in new_achievements %}
+            <div class="achievement-card new-unlocked rarity-{{ pa.achievement.rarity }}"
+                 data-achievement-id="{{ pa.id }}"
+                 onclick="showAchievementDetails({{ pa.id }})">
+                <div class="achievement-icon" style="color: {{ pa.achievement.badge_color }}">
+                    <i class="{{ pa.achievement.icon }}"></i>
+                    <span class="new-badge">NEW!</span>
+                </div>
+                <div class="achievement-info">
+                    <h4>{{ pa.achievement.name }}</h4>
+                    <p>{{ pa.achievement.description }}</p>
+                    <div class="achievement-rewards">
+                        {% if pa.achievement.reward_coins > 0 %}
+                        <span class="reward"><i class="fas fa-coins"></i> +{{ pa.achievement.reward_coins }}</span>
+                        {% endif %}
+                        {% if pa.achievement.reward_click_power > 0 %}
+                        <span class="reward"><i class="fas fa-bolt"></i> +{{ pa.achievement.reward_click_power }}</span>
+                        {% endif %}
+                        {% if pa.achievement.unlock_skin %}
+                        <span class="reward"><i class="fas fa-palette"></i> Новый скин!</span>
+                        {% endif %}
+                    </div>
+                    <div class="achievement-date">
+                        Получено: {{ pa.unlocked_at|date:"d.m.Y H:i" }}
+                    </div>
+                </div>
+                <button class="mark-seen-btn" onclick="markAchievementSeen({{ pa.id }})">
+                    <i class="fas fa-check"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="achievements-tabs">
+        {% for type_key, type_data in all_achievements.items %}
+        <div class="achievement-type-section" id="tab-{{ type_key }}">
+            <h3>
+                {% if type_key == 'clicks' %}<i class="fas fa-mouse-pointer"></i>
+                {% elif type_key == 'coins' %}<i class="fas fa-coins"></i>
+                {% elif type_key == 'upgrades' %}<i class="fas fa-arrow-up"></i>
+                {% elif type_key == 'special' %}<i class="fas fa-star"></i>
+                {% elif type_key == 'collection' %}<i class="fas fa-rainbow"></i>
+                {% else %}<i class="fas fa-trophy"></i>{% endif %}
+                {{ type_data.name }}
+            </h3>
+
+            <div class="type-stats">
+                <span class="type-progress">
+                    {% if stats_by_type and type_key in stats_by_type %}
+                        {{ stats_by_type.type_key.unlocked }}/{{ stats_by_type.type_key.total }}
+                        ({{ stats_by_type.type_key.percentage|floatformat:0 }}%)
+                    {% else %}
+                        0/0 (0%)
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="achievements-grid">
+                {% for item in type_data.achievements %}
+                <div class="achievement-card {% if item.unlocked %}unlocked{% else %}locked{% endif %} rarity-{{ item.achievement.rarity }}"
+                     onclick="{% if item.unlocked %}showAchievementDetails(null, {{ item.achievement.id }}){% endif %}">
+
+                    <div class="achievement-icon {% if not item.unlocked and item.is_secret %}secret{% endif %}"
+                         style="color: {% if item.unlocked %}{{ item.achievement.badge_color }}{% else %}#666{% endif %}">
+                        {% if not item.unlocked and item.is_secret %}
+                        <i class="fas fa-question"></i>
+                        {% else %}
+                        <i class="{{ item.achievement.icon }}"></i>
+                        {% endif %}
+
+                        {% if item.unlocked %}
+                        <span class="unlocked-badge"><i class="fas fa-check"></i></span>
+                        {% endif %}
+                    </div>
+
+                    <div class="achievement-info">
+                        <h4>
+                            {% if not item.unlocked and item.is_secret %}
+                            Секретное достижение
+                            {% else %}
+                            {{ item.achievement.name }}
+                            {% endif %}
+                        </h4>
+
+                        <p>
+                            {% if not item.unlocked and item.is_secret %}
+                            {{ item.secret_description|default:"Разблокируйте, чтобы увидеть" }}
+                            {% else %}
+                            {{ item.achievement.description }}
+                            {% endif %}
+                        </p>
+
+                        {% if not item.unlocked and not item.is_secret %}
+                        <div class="achievement-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {% widthratio item.progress.current item.progress.required 100 %}%"></div>
+                            </div>
+                            <span class="progress-text">
+                                {{ item.progress.current }}/{{ item.progress.required }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if item.unlocked %}
+                        <div class="achievement-rewards">
+                            {% if item.achievement.reward_coins > 0 %}
+                            <span class="reward"><i class="fas fa-coins"></i> +{{ item.achievement.reward_coins }}</span>
+                            {% endif %}
+                            {% if item.achievement.unlock_skin %}
+                            <span class="reward"><i class="fas fa-palette"></i> Скин разблокирован</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="achievement-rarity rarity-{{ item.achievement.rarity }}">
+                        {{ item.achievement.get_rarity_display }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Попап для деталей достижения -->
+<div id="achievement-details-popup" class="achievement-popup">
+    <div class="popup-content">
+        <div class="popup-icon">
+            <i class="fas fa-trophy" id="detail-icon"></i>
+        </div>
+        <h3 class="popup-title" id="detail-title"></h3>
+        <p class="popup-desc" id="detail-desc"></p>
+        <div class="popup-rewards" id="detail-rewards"></div>
+        <button class="popup-close" onclick="closeAchievementDetails()">Закрыть</button>
+    </div>
+</div>
+
+<script>
+// Эффекты для новых достижений
+document.addEventListener('DOMContentLoaded', function() {
+    const newAchievements = document.querySelectorAll('.achievement-card.new-unlocked');
+
+    // Запускаем эффекты для каждого нового достижения
+    newAchievements.forEach((achievement, index) => {
+        setTimeout(() => {
+            // Анимация появления
+            achievement.style.animation = 'achievementGlow 2s infinite';
+
+            // Эффект частиц
+            const rect = achievement.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+
+            if (window.particleSystem) {
+                window.particleSystem.createParticles(x, y, 20, '#FFD700');
+                window.particleSystem.createTextParticle(x, y - 50, 'НОВОЕ ДОСТИЖЕНИЕ!', '#FF4081');
+            }
+
+            // Звук
+            if (window.audioManager) {
+                setTimeout(() => {
+                    window.audioManager.playRandomSound('achievement');
+                }, index * 300);
+            }
+
+            // Конфетти для первого достижения
+            if (index === 0 && window.confettiEffects) {
+                setTimeout(() => {
+                    window.confettiEffects.launchConfetti(3000);
+                }, 1000);
+            }
+
+        }, index * 500);
+    });
+
+    // Эффекты при наведении на достижения
+    document.querySelectorAll('.achievement-card.unlocked').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.05)';
+
+            // Создаем эффект свечения
+            if (window.particleSystem) {
+                const rect = this.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                window.particleSystem.createParticles(x, y, 5, '#00BCD4', 'hover');
+            }
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(-5px) scale(1)';
+        });
+    });
+});
+
+function showAchievementDetails(playerAchievementId, achievementId = null) {
+    const popup = document.getElementById('achievement-details-popup');
+    const csrfToken = document.getElementById('csrf-token').value;
+
+    // Показываем попап
+    popup.style.display = 'flex';
+
+    // Эффект появления
+    popup.style.animation = 'popupAppear 0.5s ease-out';
+
+    // Звук открытия попапа
+    if (window.audioManager) {
+        window.audioManager.playRandomSound('upgrade');
+    }
+
+    // Загружаем данные достижения
+    fetch('/get_achievement_details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            player_achievement_id: playerAchievementId,
+            achievement_id: achievementId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('detail-icon').className = data.icon;
+            document.getElementById('detail-icon').style.color = data.color;
+            document.getElementById('detail-title').textContent = data.name;
+            document.getElementById('detail-desc').textContent = data.description;
+
+            let rewardsHtml = '';
+            if (data.rewards.coins > 0) {
+                rewardsHtml += `<span class="reward"><i class="fas fa-coins"></i> +${data.rewards.coins} монет</span>`;
+            }
+            if (data.rewards.click_power > 0) {
+                rewardsHtml += `<span class="reward"><i class="fas fa-bolt"></i> +${data.rewards.click_power} силы</span>`;
+            }
+            if (data.rewards.skin) {
+                rewardsHtml += `<span class="reward"><i class="fas fa-palette"></i> Скин "${data.rewards.skin}"</span>`;
+            }
+
+            document.getElementById('detail-rewards').innerHTML = rewardsHtml || '<p>Нет наград</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('detail-title').textContent = 'Ошибка';
+        document.getElementById('detail-desc').textContent = 'Не удалось загрузить информацию о достижении';
+    });
+}
+
+function closeAchievementDetails() {
+    const popup = document.getElementById('achievement-details-popup');
+    popup.style.animation = 'popupAppear 0.5s ease-out reverse';
+
+    setTimeout(() => {
+        popup.style.display = 'none';
+    }, 500);
+}
+
+function markAchievementSeen(achievementId) {
+    const csrfToken = document.getElementById('csrf-token').value;
+    const card = document.querySelector(`[data-achievement-id="${achievementId}"]`);
+
+    // Визуальная обратная связь
+    card.style.transform = 'scale(0.95)';
+    card.style.opacity = '0.7';
+
+    // Эффект исчезновения
+    if (window.particleSystem) {
+        const rect = card.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        window.particleSystem.createParticles(x, y, 15, '#4CAF50', 'disappear');
+    }
+
+    // Звук
+    if (window.audioManager) {
+        window.audioManager.playRandomSound('click');
+    }
+
+    // Отправка запроса
+    fetch('/mark_achievement_seen/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            achievement_id: achievementId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Удаляем карточку через анимацию
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.transform = 'scale(0)';
+                card.style.opacity = '0';
+
+                setTimeout(() => {
+                    card.remove();
+
+                    // Обновляем счетчик новых достижений
+                    const newCount = document.querySelectorAll('.achievement-card.new-unlocked').length;
+                    if (newCount === 0) {
+                        document.querySelector('.new-achievements-section').style.display = 'none';
+                    }
+                }, 500);
+            }, 300);
+        }
+    });
+}
+
+// Закрытие попапа при клике вне его
+document.getElementById('achievement-details-popup').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAchievementDetails();
+    }
+});
+</script>
+{% endblock %}
