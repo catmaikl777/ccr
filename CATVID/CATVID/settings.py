@@ -21,9 +21,7 @@ if 'mongodb.net' in MONGO_URI:
             'NAME': 'clicker_game',
             'CLIENT': {
                 'host': MONGO_URI,
-                'ssl': True,
-                'ssl_cert_reqs': 'CERT_REQUIRED',
-                'ssl_ca_certs': None,
+                'tls': True,
                 'tlsAllowInvalidCertificates': False,
                 'retryWrites': True,
                 'w': 'majority',
