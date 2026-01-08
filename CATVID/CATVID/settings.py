@@ -21,13 +21,10 @@ if 'mongodb.net' in MONGO_URI:
             'NAME': 'clicker_game',
             'CLIENT': {
                 'host': MONGO_URI,
-                'tls': True,
-                'tlsAllowInvalidCertificates': False,
+                'ssl': True,
+                'ssl_cert_reqs': 'CERT_NONE',
                 'retryWrites': True,
                 'w': 'majority',
-                'serverSelectionTimeoutMS': 30000,
-                'connectTimeoutMS': 20000,
-                'socketTimeoutMS': 20000,
             }
         }
     }
