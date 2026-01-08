@@ -12,15 +12,38 @@ ROOT_URLCONF = 'CATVID.urls'
 
 # MongoDB Atlas (бесплатный) или локальный MongoDB
 MONGO_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URL') or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
-DATABASES = {
-    'default': {
-        'ENGINE': 'djongo',
-        'NAME': 'clicker_game',
-        'CLIENT': {
-            'host': MONGO_URI,
+
+# Проверяем, если это MongoDB Atlas
+if 'mongodb.net' in MONGO_URI:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'djongo',
+            'NAME': 'clicker_game',
+            'CLIENT': {
+                'host': MONGO_URI,
+                'ssl': True,
+                'ssl_cert_reqs': 'CERT_REQUIRED',
+                'ssl_ca_certs': None,
+                'tlsAllowInvalidCertificates': False,
+                'retryWrites': True,
+                'w': 'majority',
+                'serverSelectionTimeoutMS': 30000,
+                'connectTimeoutMS': 20000,
+                'socketTimeoutMS': 20000,
+            }
         }
     }
-}
+else:
+    # Локальная база данных
+    DATABASES = {
+        'default': {
+            'ENGINE': 'djongo',
+            'NAME': 'clicker_game',
+            'CLIENT': {
+                'host': MONGO_URI,
+            }
+        }
+    }
 
 # Локальное кэширование в памяти
 CACHES = {
