@@ -83,11 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Обновляем счет
                 updateStats(data);
 
-                // Показываем уведомление каждые 10 кликов
-                if (data.auto_clicks > 0 && Math.random() < 0.1) {
-                    showAutoClickNotification(data);
-                }
-
                 // Играем звук клика с малой вероятностью
                 if (window.audioManager && Math.random() < 0.05) {
                     window.audioManager.playRandomSound('click');
@@ -191,31 +186,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 300);
         }
-    }
-
-    function showAutoClickNotification(data) {
-        // Создаем временное уведомление
-        const notification = document.createElement('div');
-        notification.className = 'auto-click-notification';
-        notification.innerHTML = `
-            <i class="fas fa-robot"></i>
-            <span>Автокликер: +${data.coins_earned} монет</span>
-        `;
-
-        document.body.appendChild(notification);
-
-        // Показываем
-        setTimeout(() => notification.classList.add('show'), 10);
-
-        // Скрываем через 2 секунды
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 2000);
     }
 
     function showNotification(message, type = 'info') {

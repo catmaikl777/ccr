@@ -1,44 +1,25 @@
 import os
 from pathlib import Path
+import dj_database_url
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Production settings
-SECRET_KEY = os.environ.get('SECRET_KEY', 'd_)q(x8acik%p3@1+z*io3^y*2@9#^aow1^p!-py)u-$)@*ohd')
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-ALLOWED_HOSTS = ['*']  # Для бесплатного хостинга
+SECRET_KEY = config('SECRET_KEY', default='d_)q(x8acik%p3@1+z*io3^y*2@9#^aow1^p!-py)u-$)@*ohd')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 ROOT_URLCONF = 'CATVID.urls'
 
-# MongoDB Atlas (бесплатный) или локальный MongoDB
-MONGO_URI = os.environ.get('DATABASE_URL') or os.environ.get('MONGODB_URL') or os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
-
-# Проверяем, если это MongoDB Atlas
-if 'mongodb.net' in MONGO_URI:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'djongo',
-            'NAME': 'clicker_game',
-            'CLIENT': {
-                'host': MONGO_URI,
-                'ssl': True,
-                'ssl_cert_reqs': 'CERT_NONE',
-                'retryWrites': True,
-                'w': 'majority',
-            }
-        }
-    }
-else:
-    # Локальная база данных
-    DATABASES = {
-        'default': {
-            'ENGINE': 'djongo',
-            'NAME': 'clicker_game',
-            'CLIENT': {
-                'host': MONGO_URI,
-            }
-        }
-    }
+# MySQL Database для Render
+DATABASES = {
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='sqlite:///db.sqlite3'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
 
 # Локальное кэширование в памяти
 CACHES = {
@@ -112,13 +93,16 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Убираем ManifestStaticFilesStorage для разработки
 # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
-# Security для высоких нагрузок
-# Отключаем избыточные HTTP-заголовки безопасности для разработки
-# SECURE_HSTS_SECONDS = 31536000
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
-# SECURE_CONTENT_TYPE_NOSNIFF = True
-# SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+# Security для production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 X_FRAME_OPTIONS = 'DENY'
 
 INSTALLED_APPS = [

@@ -1,188 +1,60 @@
-if (!window.EnhancedClicker) {
-    window.EnhancedClicker = class {
-        constructor() {
-            if (window.clickerInstance) {
-                return window.clickerInstance;
-            }
-            window.clickerInstance = this;
+class EnhancedClicker {
+    constructor() {
         this.coins = 0;
         this.clickPower = 1;
-        this.criticalChance = 0.1;
-        this.criticalMultiplier = 2;
-        this.clickButton = null;
-        this.coinsElement = null;
-        this.clicksElement = null;
-        this.clickPowerElement = null;
-        this.isAnimating = false;
-        this.lastClickTime = 0;
+        this.autoClickerPower = 0;
         this.clickStreak = 0;
         this.maxStreak = 0;
+        this.lastClickTime = 0;
         this.streakTimer = null;
+        
+        this.clickButton = document.querySelector('.click-button') || document.getElementById('click-button');
+        this.coinsElement = document.querySelector('#coins');
+        this.clicksElement = document.querySelector('#clicks');
+        
         this.init();
     }
-
+    
     init() {
-        this.clickButton = document.getElementById('click-button');
-        this.coinsElement = document.getElementById('coins');
-        this.clicksElement = document.getElementById('clicks');
-        this.clickPowerElement = document.getElementById('click-power');
-
-        if (this.coinsElement) {
-            this.coins = parseInt(this.coinsElement.textContent) || 0;
+        if (this.clickButton) {
+            this.clickButton.addEventListener('click', (e) => this.handleClick(e));
         }
-
-        if (this.clickPowerElement) {
-            this.clickPower = parseInt(this.clickPowerElement.textContent) || 1;
-        }
-
-        this.setupEventListeners();
+        
         this.createFloatingCoins();
         this.setupAutoClicker();
         this.playClickerTheme();
     }
-
-    setupEventListeners() {
-        if (this.clickButton) {
-            // Mouse events
-            this.clickButton.addEventListener('click', (e) => this.handleClick(e));
-
-            // Touch events for mobile
-            this.clickButton.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                this.handleClick(e.touches[0]);
-            }, { passive: false });
-
-            // Mouse down/up for animation
-            this.clickButton.addEventListener('mousedown', () => this.animateButtonPress(true));
-            this.clickButton.addEventListener('mouseup', () => this.animateButtonPress(false));
-            this.clickButton.addEventListener('mouseleave', () => this.animateButtonPress(false));
-
-            // Touch events for press animation
-            this.clickButton.addEventListener('touchstart', () => this.animateButtonPress(true));
-            this.clickButton.addEventListener('touchend', () => this.animateButtonPress(false));
-            this.clickButton.addEventListener('touchcancel', () => this.animateButtonPress(false));
-        }
-
-        // Keyboard support
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.code === 'Enter') {
-                e.preventDefault();
-                this.handleClick({ clientX: window.innerWidth / 2, clientY: window.innerHeight / 2 });
-            }
-        });
-    }
-
-    handleClick(event) {
-        if (this.isAnimating) return;
-
-        const rect = this.clickButton.getBoundingClientRect();
-        const x = event.clientX || rect.left + rect.width / 2;
-        const y = event.clientY || rect.top + rect.height / 2;
-
-        // Calculate earnings
-        const isCritical = Math.random() < this.criticalChance;
-        const earnings = isCritical ?
-            Math.floor(this.clickPower * this.criticalMultiplier) :
-            this.clickPower;
-
-        // Update coins
-        this.addCoins(earnings);
-
-        // Update clicks counter
+    
+    handleClick(e) {
+        const isCritical = Math.random() < 0.1;
+        const coins = isCritical ? this.clickPower * 2 : this.clickPower;
+        
+        this.addCoins(coins);
         this.updateClicks();
-
-        // Create visual effects
-        this.createClickEffects(x, y, earnings, isCritical);
-
-        // Play sounds
-        this.playClickSound(isCritical);
-
-        // Combo system
-        if (window.comboSystem) {
-            window.comboSystem.addClick();
-        }
-
-        // Streak system
         this.updateClickStreak();
-
-        // Vibrate on mobile
-        if (navigator.vibrate) {
-            navigator.vibrate(50);
-        }
-
-        // Screen shake for critical hits
-        if (isCritical && window.screenShaker) {
-            window.screenShaker.shake(8, 100);
-        }
-    }
-
-    createClickEffects(x, y, amount, isCritical) {
-        // Create particles
-        if (window.particleSystem) {
-            const color = isCritical ? '#FF4081' : '#FFD700';
-            window.particleSystem.createParticles(x, y, 15, color);
-            window.particleSystem.createCoinParticles(x, y, Math.min(amount, 10));
-        }
-
-        // Floating text
-        const text = isCritical ? `CRIT! +${amount}` : `+${amount}`;
-        const color = isCritical ? '#FF4081' : '#4CAF50';
-        window.floatingText?.show(text, x, y - 50, color);
-
-        // Button animation
-        this.animateButton();
-
-        // Trail effect
-        this.createClickTrail(x, y);
-    }
-
-    createClickTrail(x, y) {
-        for (let i = 0; i < 3; i++) {
+        this.playClickSound(isCritical);
+        
+        this.createClickEffect(e);
+        
+        if (this.clickButton) {
+            this.clickButton.style.transform = 'scale(0.95)';
+            this.clickButton.style.filter = 'brightness(1.2)';
+            
             setTimeout(() => {
-                if (window.particleSystem) {
-                    window.particleSystem.createParticles(
-                        x + (Math.random() - 0.5) * 20,
-                        y + (Math.random() - 0.5) * 20,
-                        3,
-                        '#00BCD4',
-                        'trail'
-                    );
-                }
-            }, i * 50);
+                this.clickButton.style.transform = 'scale(1)';
+                this.clickButton.style.filter = 'brightness(1)';
+            }, 100);
         }
     }
-
-    animateButton() {
-        this.isAnimating = true;
-        const button = this.clickButton;
-
-        // Scale animation
-        button.style.transform = 'scale(0.9)';
-
-        // Glow effect
-        button.style.boxShadow = '0 0 30px rgba(255, 215, 0, 0.7)';
-
-        setTimeout(() => {
-            button.style.transform = 'scale(1.05)';
-            button.style.boxShadow = '0 0 50px rgba(255, 64, 129, 0.5)';
-        }, 100);
-
-        setTimeout(() => {
-            button.style.transform = 'scale(1)';
-            button.style.boxShadow = '';
-            this.isAnimating = false;
-        }, 200);
-    }
-
-    animateButtonPress(isPressed) {
-        if (!this.clickButton) return;
-
-        if (isPressed) {
-            this.clickButton.style.transform = 'scale(0.85)';
-            this.clickButton.style.filter = 'brightness(0.8)';
-        } else {
-            this.clickButton.style.transform = 'scale(1)';
-            this.clickButton.style.filter = 'brightness(1)';
+    
+    createClickEffect(e) {
+        if (window.particleSystem) {
+            window.particleSystem.createParticles(
+                e.clientX,
+                e.clientY,
+                5,
+                '#FFD700'
+            );
         }
     }
 
@@ -190,11 +62,9 @@ if (!window.EnhancedClicker) {
         this.coins += amount;
 
         if (this.coinsElement) {
-            // Animate number increase
             this.animateNumber(this.coinsElement, this.coins - amount, this.coins);
         }
 
-        // Save to server
         this.saveProgress();
     }
 
@@ -206,7 +76,6 @@ if (!window.EnhancedClicker) {
             const current = Math.floor(from + (to - from) * progress);
             element.textContent = current.toLocaleString();
 
-            // Color animation
             if (progress < 1) {
                 element.style.color = '#4CAF50';
                 element.style.transform = 'scale(1.1)';
@@ -227,7 +96,6 @@ if (!window.EnhancedClicker) {
             const current = parseInt(this.clicksElement.textContent) || 0;
             this.clicksElement.textContent = current + 1;
 
-            // Animation
             this.clicksElement.style.color = '#2196F3';
             this.clicksElement.style.transform = 'scale(1.1)';
 
@@ -252,13 +120,11 @@ if (!window.EnhancedClicker) {
         if (this.clickStreak > this.maxStreak) {
             this.maxStreak = this.clickStreak;
 
-            // Special effects for new streak records
             if (this.clickStreak % 10 === 0) {
                 this.createStreakEffects();
             }
         }
 
-        // Reset streak after 2 seconds
         clearTimeout(this.streakTimer);
         this.streakTimer = setTimeout(() => {
             this.clickStreak = 0;
@@ -266,7 +132,6 @@ if (!window.EnhancedClicker) {
     }
 
     createStreakEffects() {
-        // Rainbow effect for high streaks
         const button = this.clickButton;
         if (!button) return;
 
@@ -287,25 +152,19 @@ if (!window.EnhancedClicker) {
     }
 
     playClickSound(isCritical) {
-        // Используем наш аудио-менеджер
         if (window.audioManager) {
             if (isCritical) {
                 window.audioManager.playSound('critical', 0);
             } else {
                 window.audioManager.playRandomSound('click');
             }
-        } else {
-            console.warn('⚠️ Audio manager not available for click sound');
         }
     }
 
     playClickerTheme() {
-        // Используем наш аудио-менеджер для фоновой музыки
         const startTheme = () => {
             if (window.audioManager) {
                 window.audioManager.playMusic();
-            } else {
-                console.warn('⚠️ Audio manager not available for theme music');
             }
         };
 
@@ -314,7 +173,6 @@ if (!window.EnhancedClicker) {
     }
 
     createFloatingCoins() {
-        // Create floating coins in background
         const coinContainer = document.createElement('div');
         coinContainer.id = 'floating-coins';
         coinContainer.style.cssText = `
@@ -353,7 +211,6 @@ if (!window.EnhancedClicker) {
 
         container.appendChild(coin);
 
-        // Add CSS animation
         if (!document.getElementById('float-animation')) {
             const style = document.createElement('style');
             style.id = 'float-animation';
@@ -384,7 +241,6 @@ if (!window.EnhancedClicker) {
             if (this.autoClickerPower > 0) {
                 this.addCoins(this.autoClickerPower);
 
-                // Visual feedback for auto clicks
                 const rect = this.clickButton?.getBoundingClientRect();
                 if (rect && window.particleSystem) {
                     window.particleSystem.createParticles(
@@ -400,7 +256,6 @@ if (!window.EnhancedClicker) {
     }
 
     saveProgress() {
-        // Save to server via AJAX
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
         if (!csrfToken) return;
 
@@ -415,14 +270,16 @@ if (!window.EnhancedClicker) {
                 click_power: this.clickPower
             })
         }).catch(e => console.error('Save error:', e));
-    };
+    }
 }
 
-// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    window.enhancedClicker = new EnhancedClicker();
+    // Проверяем, не инициализирован ли уже кликер в основном файле
+    if (!window.gameClickerInitialized) {
+        window.enhancedClicker = new EnhancedClicker();
+        window.gameClickerInitialized = true;
+    }
 
-    // Add CSS for effects
     const style = document.createElement('style');
     style.textContent = `
         .click-button {
@@ -482,4 +339,3 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 });
-}

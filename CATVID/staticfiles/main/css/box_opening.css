@@ -1,0 +1,385 @@
+/* Простое уведомление сверху */
+.simple-box-notification {
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2d3561 0%, #1f2544 100%);
+    border-radius: 15px;
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 100000;
+    min-width: 400px;
+    transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.simple-box-notification.show {
+    top: 30px;
+}
+
+.simple-box-notification.rare {
+    background: linear-gradient(135deg, #ff6b9d 0%, #c44569 100%);
+    border-color: #ffd700;
+    box-shadow: 0 0 30px rgba(255, 107, 157, 0.6), 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.notification-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.notification-details {
+    flex: 1;
+    color: #fff;
+}
+
+.notification-details h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.notification-details p {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.item-value {
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.rare-badge {
+    display: inline-block;
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.notification-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Уведомление об ошибке */
+.simple-box-error {
+    position: fixed;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(201, 42, 42, 0.5);
+    z-index: 100001;
+    transition: top 0.3s ease;
+}
+
+.simple-box-error.show {
+    top: 30px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .simple-box-notification {
+        min-width: auto;
+        width: 90%;
+        max-width: 400px;
+        padding: 15px 20px;
+    }
+
+    .notification-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .notification-details h4 {
+        font-size: 1rem;
+    }
+
+    .notification-details p {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .simple-box-notification {
+        gap: 15px;
+        padding: 12px 15px;
+    }
+
+    .notification-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.3rem;
+    }
+
+    .notification-details h4 {
+        font-size: 0.95rem;
+    }
+
+    .notification-details p {
+        font-size: 0.85rem;
+    }
+
+    .rare-badge {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+    }
+}
+
+/* Уведомление сверху */
+.top-notification {
+    background: linear-gradient(135deg, rgba(45, 53, 97, 0.95) 0%, rgba(31, 37, 68, 0.95) 100%);
+    border-radius: 12px;
+    padding: 15px 20px;
+    min-width: 350px;
+    max-width: 500px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateY(-100px) scale(0.9);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.top-notification.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.top-notification[data-rare="true"] {
+    background: linear-gradient(135deg, rgba(255, 107, 157, 0.95) 0%, rgba(196, 69, 105, 0.95) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    animation: rareGlow 2s infinite;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.top-notification[data-type="skin"] .notification-icon {
+    background: linear-gradient(135deg, #9c88ff, #8c7ae6);
+}
+
+.top-notification[data-type="coins"] .notification-icon {
+    background: linear-gradient(135deg, #fdcb6e, #e17055);
+}
+
+.top-notification[data-type="clicks"] .notification-icon {
+    background: linear-gradient(135deg, #00b894, #00a085);
+}
+
+.notification-text {
+    flex: 1;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.notification-text strong {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.notification-text span:not(.rare-tag) {
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.rare-tag {
+    display: inline-block;
+    background: linear-gradient(45deg, #ffd700, #ff6b00);
+    color: #333;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 5px;
+    text-align: center;
+    animation: tagPulse 1.5s infinite;
+}
+
+/* Уведомление об ошибке сверху */
+.top-error {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.95) 0%, rgba(201, 42, 42, 0.95) 100%);
+    border-radius: 12px;
+    padding: 15px 20px;
+    min-width: 300px;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(201, 42, 42, 0.3);
+    opacity: 0;
+    transform: translateY(-100px);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.top-error.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.error-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+}
+
+.error-content i {
+    font-size: 1.3rem;
+    color: #ffd700;
+}
+
+.error-content span {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Анимации */
+@keyframes rareGlow {
+    0%, 100% {
+        box-shadow: 0 8px 32px rgba(255, 107, 157, 0.4);
+    }
+    50% {
+        box-shadow: 0 8px 40px rgba(255, 107, 157, 0.6);
+    }
+}
+
+@keyframes tagPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .top-notification {
+        min-width: 90%;
+        max-width: 95%;
+        padding: 12px 16px;
+        margin: 0 10px 5px 10px;
+    }
+
+    .top-error {
+        min-width: 85%;
+        max-width: 90%;
+        padding: 12px 16px;
+        margin: 0 10px 5px 10px;
+    }
+
+    .notification-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1.3rem;
+    }
+
+    .notification-text strong {
+        font-size: 0.95rem;
+    }
+
+    .notification-text span:not(.rare-tag) {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-notification {
+        padding: 10px 14px;
+    }
+
+    .top-error {
+        padding: 10px 14px;
+    }
+
+    .notification-content {
+        gap: 12px;
+    }
+
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2rem;
+    }
+
+    .notification-text strong {
+        font-size: 0.9rem;
+    }
+
+    .notification-text span:not(.rare-tag) {
+        font-size: 0.85rem;
+    }
+
+    .rare-tag {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+    }
+
+    .error-content i {
+        font-size: 1.2rem;
+    }
+
+    .error-content span {
+        font-size: 0.9rem;
+    }
+}

@@ -73,8 +73,13 @@
 
                     <!-- Прогресс уровня -->
                     <div class="level-progress">
-                        <div class="progress-bar"
-                             style="width: {% widthratio upgrade.player_level upgrade.max_level 100 %}">
+                        {% if upgrade.max_level > 0 %}
+                            {% widthratio upgrade.player_level upgrade.max_level 100 as width_percent %}
+                        {% else %}
+                            {% widthratio 0 1 100 as width_percent %}
+                        {% endif %}
+                        
+                        <div class="progress-bar" data-width="{{ width_percent }}">
                             <span class="progress-text">{{ upgrade.player_level }}/{{ upgrade.max_level }}</span>
                         </div>
                     </div>
@@ -110,7 +115,7 @@
             <div class="box-card" data-box-id="{{ box.id }}">
                 <div class="box-header">
                     <h3>{{ box.name }}</h3>
-                    <img src="{% static 'main/images/' %}{{ box.image }}" alt="{{ box.name }}" class="box-image" onerror="this.src='{% static 'main/images/box.svg' %}'">
+                    <img src="{% static 'main/images/' %}{{ box.image }}" alt="{{ box.name }}" class="box-image" onerror="this.src=`{% static 'main/images/box.svg' %}`">
                 </div>
                 
                 <p class="box-desc">{{ box.description }}</p>
@@ -139,13 +144,8 @@
                 
                 <button class="buy-box-button" 
                         data-box-id="{{ box.id }}"
-                        data-price="{{ box.price }}"
-                        {% if player.coins < box.price %}disabled{% endif %}>
-                    {% if player.coins < box.price %}
-                        <i class="fas fa-lock"></i> Недостаточно монет
-                    {% else %}
-                        <i class="fas fa-box-open"></i> Купить за {{ box.price }} монет
-                    {% endif %}
+                        data-price="{{ box.price }}">
+                    <i class="fas fa-box-open"></i> Купить за {{ box.price }} монет
                 </button>
             </div>
             {% empty %}
@@ -159,12 +159,17 @@
 {% csrf_token %}
 {% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/box_opening.css' %}">
+{% endblock %}
+
 {% block scripts %}
 <script src="{% static 'main/js/audio-manager.js' %}" defer></script>
 <script src="{% static 'main/js/clicker.js' %}" defer></script>
 <script src="{% static 'main/js/init-effects.js' %}" defer></script>
 <script src="{% static 'main/js/auto_clicker.js' %}" defer></script>
 <script src="{% static 'main/js/skin_manager.js' %}" defer></script>
+<script src="{% static 'main/js/box_opening.js' %}" defer></script>
 
 <script>
     // Function to get cookie value
@@ -337,7 +342,7 @@
                     gameState.clickPower = data.click_power;
                     gameState.autoClickerPower = data.auto_clicker_power;
                     updateUI();
-                    location.reload(); // Перезагружаем для обновления цен
+                    location.reload();
                 } else {
                     alert(data.error || 'Ошибка покупки');
                 }
@@ -348,87 +353,31 @@
         }
     }
 
-    // Покупка ящика
-    function buyBox(boxId, price) {
-        console.log(`Попытка купить ящик ${boxId} за ${price} монет. У игрока: ${gameState.coins} монет`);
-        
-        if (gameState.coins >= price) {
-            const button = document.querySelector(`[data-box-id="${boxId}"]`);
-            if (button) {
-                button.disabled = true;
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Открываем...';
-            }
-            
-            console.log('Отправляем запрос на покупку ящика...');
-            
-            fetch('/buy_box/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    box_id: boxId
-                })
-            })
-            .then(response => {
-                console.log('Получен ответ от сервера:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Данные ответа:', data);
-                
-                if (data.success) {
-                    gameState.coins = data.coins;
-                    updateUI();
-                    
-                    // Показываем результат
-                    const result = data.result;
-                    let message = result.message || 'Получен предмет!';
-                    if (result.is_rare) {
-                        message = '🌟 ' + message + ' 🌟';
-                    }
-                    alert(message);
-                    
-                    // Если получен скин, обновляем изображение
-                    if (result.item_type === 'skin') {
-                        gameState.currentSkin = result.item_value;
-                        updateSkinImage();
-                    }
-                    
-                    // Обновляем кнопки ящиков
-                    updateBoxButtons();
-                } else {
-                    console.error('Ошибка покупки:', data.error);
-                    alert(data.error || 'Ошибка покупки ящика');
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка сети при покупке ящика:', error);
-                alert('Ошибка сети');
-            })
-            .finally(() => {
-                // Восстанавливаем кнопку независимо от результата
-                if (button) {
-                    updateBoxButtons();
-                }
-            });
-        } else {
-            console.log('Недостаточно монет для покупки');
-            alert('Недостаточно монет!');
-        }
+    // Покупка ящика с простым уведомлением
+function buyBox(boxId, price, button) {
+    if (window.boxOpening) {
+        window.boxOpening.openBox(boxId, price, button);
     }
+}
     
     // Функция обновления кнопок ящиков
     function updateBoxButtons() {
         document.querySelectorAll('.buy-box-button').forEach(button => {
             const price = parseInt(button.dataset.price);
-            if (gameState.coins >= price) {
-                button.disabled = false;
-                button.innerHTML = `<i class="fas fa-box-open"></i> Купить за ${price} монет`;
-            } else {
+            
+            // Не восстанавливаем кнопку, если она была отключена после покупки
+            if (button.innerHTML.includes('Открываем...')) {
+                return;
+            }
+            
+            if (gameState.coins < price) {
+                button.style.opacity = '0.7';
+                button.title = 'Недостаточно монет';
                 button.disabled = true;
-                button.innerHTML = '<i class="fas fa-lock"></i> Недостаточно монет';
+            } else {
+                button.style.opacity = '1';
+                button.title = '';
+                button.disabled = false;
             }
         });
     }
@@ -452,17 +401,11 @@
         
         // Обработчики для кнопок ящиков
         document.querySelectorAll('.buy-box-button').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
                 const boxId = this.dataset.boxId;
                 const price = parseInt(this.dataset.price);
-                
-                console.log(`Клик по кнопке ящика: ID=${boxId}, цена=${price}`);
-                
-                if (!this.disabled) {
-                    buyBox(boxId, price);
-                } else {
-                    console.log('Кнопка заблокирована');
-                }
+                buyBox(boxId, price, this);
             });
         });
     });
@@ -490,23 +433,30 @@
             transform: scale(0.95);
         }
         
-        .buy-button:disabled,
-        .buy-box-button:disabled {
+        .buy-button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
+        
+        .buy-box-button {
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
     `;
     document.head.appendChild(style);
+
+    document.querySelectorAll('.progress-bar').forEach(bar => {
+        const width = bar.dataset.width || 0;
+        bar.style.width = width + '%';
+    });
 
     // Дополнительная оптимизация для мобильных
     (function() {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (isMobile) {
-            // Убираем все hover эффекты на мобильных
             document.body.classList.add('no-hover');
 
-            // Предотвращаем масштабирование при двойном тапе
             let lastTap = 0;
             document.addEventListener('touchend', function(e) {
                 const currentTime = new Date().getTime();

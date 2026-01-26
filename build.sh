@@ -1,6 +1,4 @@
-#!/bin/bash
-pip install --upgrade pip
+#!/usr/bin/env bash
 pip install -r requirements.txt
-cd CATVID
-python manage.py collectstatic --noinput
-python manage.py migrate --noinput
+python manage.py collectstatic --no-input
+python manage.py migrate
