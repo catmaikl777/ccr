@@ -27,7 +27,7 @@ echo.
 echo [4/5] Теперь настройте Render:
 echo.
 echo 1. Зайдите на https://render.com
-echo 2. New → MySQL (создайте базу данных)
+echo 2. New → PostgreSQL (создайте базу данных)
 echo 3. Скопируйте Internal Database URL
 echo 4. New → Web Service (подключите GitHub репозиторий)
 echo.
@@ -40,7 +40,7 @@ echo Environment Variables:
 echo - SECRET_KEY=ваш-секретный-ключ
 echo - DEBUG=False
 echo - ALLOWED_HOSTS=*
-echo - DATABASE_URL=mysql://user:pass@host:port/db (из MySQL Internal URL)
+echo - DATABASE_URL=postgres://user:pass@host:port/db (из PostgreSQL Internal URL)
 echo.
 pause
 

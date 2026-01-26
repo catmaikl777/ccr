@@ -1,9 +1,9 @@
-# Деплой Django на Render с MySQL
+# Деплой Django на Render с PostgreSQL
 
 ## Что уже настроено:
 
 ✅ settings.py - настроен для production
-✅ requirements.txt - все зависимости добавлены
+✅ requirements.txt - PostgreSQL зависимости
 ✅ build.sh - скрипт для сборки
 ✅ .env - локальные переменные окружения
 ✅ .gitignore - исключены ненужные файлы
@@ -21,12 +21,12 @@ git remote add origin https://github.com/ваш-username/ваш-репозито
 git push -u origin main
 ```
 
-### 2. Создайте MySQL базу на Render
+### 2. Создайте PostgreSQL базу на Render
 
 1. Зайдите на https://render.com
-2. New → MySQL
-3. Выберите Free план (или платный)
-4. Скопируйте **Internal Database URL** (формат: mysql://user:pass@host:port/db)
+2. New → PostgreSQL
+3. Выберите Free план
+4. Скопируйте **Internal Database URL** (формат: postgres://user:pass@host:port/db)
 
 ### 3. Создайте Web Service на Render
 
@@ -47,10 +47,10 @@ git push -u origin main
 SECRET_KEY=ваш-секретный-ключ-django
 DEBUG=False
 ALLOWED_HOSTS=*
-DATABASE_URL=mysql://user:password@host:port/database
+DATABASE_URL=postgres://user:password@host:port/database
 ```
 
-**Важно**: DATABASE_URL берите из Internal Database URL вашей MySQL базы на Render
+**Важно**: DATABASE_URL берите из Internal Database URL вашей PostgreSQL базы на Render
 
 ### 5. Деплой
 
@@ -90,6 +90,6 @@ Render автоматически задеплоит изменения.
 
 Если возникли проблемы:
 1. Проверьте логи в Render Dashboard
-2. Убедитесь что DATABASE_URL правильный
+2. Убедитесь что DATABASE_URL правильный (postgres://, не postgresql://)
 3. Проверьте что все зависимости в requirements.txt
 4. Убедитесь что build.sh исполняемый: `chmod +x build.sh`
