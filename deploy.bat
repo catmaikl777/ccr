@@ -32,9 +32,9 @@ echo 3. Скопируйте Internal Database URL
 echo 4. New → Web Service (подключите GitHub репозиторий)
 echo.
 echo Настройки Web Service:
-echo - Root Directory: CATVID
-echo - Build Command: chmod +x ../build.sh ^&^& ../build.sh
-echo - Start Command: gunicorn CATVID.wsgi:application --bind 0.0.0.0:$PORT
+echo - Root Directory: (оставьте пустым)
+echo - Build Command: ./build.sh
+echo - Start Command: cd CATVID ^&^& gunicorn CATVID.wsgi:application --bind 0.0.0.0:$PORT
 echo.
 echo Environment Variables:
 echo - SECRET_KEY=ваш-секретный-ключ

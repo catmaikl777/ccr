@@ -34,9 +34,9 @@ git push -u origin main
 2. Подключите ваш GitHub репозиторий
 3. Настройки:
    - **Name**: ваше-имя-приложения
-   - **Root Directory**: CATVID
-   - **Build Command**: `chmod +x ../build.sh && ../build.sh`
-   - **Start Command**: `gunicorn CATVID.wsgi:application --bind 0.0.0.0:$PORT`
+   - **Root Directory**: (оставьте пустым)
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `cd CATVID && gunicorn CATVID.wsgi:application --bind 0.0.0.0:$PORT`
    - **Environment**: Python 3
 
 ### 4. Добавьте Environment Variables

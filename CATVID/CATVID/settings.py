@@ -6,9 +6,9 @@ from decouple import config
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Production settings
-SECRET_KEY = config('SECRET_KEY', default='d_)q(x8acik%p3@1+z*io3^y*2@9#^aow1^p!-py)u-$)@*ohd')
+SECRET_KEY = config('SECRET_KEY', default='d_)q(x8acik%p3@1+z*io3^y*2@9#^aow1^p!-py)u-$)@*oh5')
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,cosatkaclick-remaster-277.onrender.com,.onrender.com').split(',')
 
 ROOT_URLCONF = 'CATVID.urls'
 
